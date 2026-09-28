@@ -26,6 +26,10 @@ Local dev has no email server, so the site shows the "send it on Messenger" fall
 
 4. Redeploy, place a test order and check the inbox.
 
+## Deploy on Vercel
+
+The repo root has `vercel.json`, which builds the `site/` folder and serves it at the root URL. The order email runs from `api/order.mjs`. Add the same four environment variables in Vercel → Project → Settings → Environment Variables, then redeploy.
+
 ## Where to edit things
 
 | What | File |
