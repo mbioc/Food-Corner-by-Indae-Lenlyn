@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.playwright-cli/
+**/.impeccable/review/
+**/.impeccable/questions/
+**/.impeccable/flow.js
+research/crops/
+*.log
+.DS_Store
+.env*

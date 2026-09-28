@@ -1,0 +1,55 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T04:10:00Z",
+  "title": "Design System: Food Corner by Indae Lenlyn",
+  "extensions": {
+    "colorMeta": {
+      "leaf": { "role": "primary", "displayName": "Banana Leaf", "canonical": "#1f7535", "tonalRamp": ["#0f3f1e", "#145327", "#196530", "#1f7535", "#3f8f52", "#7db88a"] },
+      "sun": { "role": "secondary", "displayName": "Sunshine", "canonical": "#fae02c", "tonalRamp": ["#e9c80f", "#fae02c", "#fcea6f", "#fdf3b0"] },
+      "lime": { "role": "tertiary", "displayName": "Lime", "canonical": "#bbe347" },
+      "chili": { "role": "error", "displayName": "Chili", "canonical": "#c8321f" },
+      "ground": { "role": "neutral", "displayName": "Pale Lime Ground", "canonical": "#f7f9e6" },
+      "tag": { "role": "neutral", "displayName": "Tray Tag", "canonical": "#fbfcc6" },
+      "ink": { "role": "neutral", "displayName": "Deep Green Ink", "canonical": "#0d150d" },
+      "ink-soft": { "role": "neutral", "displayName": "Soft Ink", "canonical": "#33412f" }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero headline and section headings." },
+      "price": { "displayName": "Price", "purpose": "Prices and headcounts, tabular numerals." },
+      "body": { "displayName": "Body", "purpose": "Copy, labels, forms." }
+    },
+    "shadows": [
+      { "name": "tray", "value": "0 10px 24px -12px rgb(13 21 13 / 0.45), 0 2px 6px -2px rgb(13 21 13 / 0.25)", "purpose": "Foil trays and bilao sitting on the table." },
+      { "name": "lift", "value": "0 18px 40px -18px rgb(13 21 13 / 0.5)", "purpose": "Table bar and sheets." }
+    ],
+    "motion": [
+      { "name": "spring-default", "value": "spring, bounce 0, duration 0.42s", "purpose": "Sheets and step transitions (critically damped)." },
+      { "name": "spring-land", "value": "spring, bounce 0.2, duration 0.6s", "purpose": "Tray flying onto the table bar (momentum earns bounce)." },
+      { "name": "ease-out-expo", "value": "cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "CSS state transitions." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" },
+      { "name": "xl", "value": "1280px" }
+    ]
+  },
+  "components": [
+    { "name": "Primary Button", "kind": "button", "refersTo": "button-primary", "description": "Main action: Order na, Add to table, Continue.", "html": "<button class=\"ds-btn\">Order na</button>", "css": ".ds-btn{background:#fae02c;color:#0d150d;height:48px;padding:0 20px;border:0;border-radius:14px;font:600 16px Figtree,sans-serif;box-shadow:0 8px 18px -10px rgb(13 21 13/.6);transition:background .2s,transform .2s}.ds-btn:hover{background:#e9c80f}.ds-btn:active{transform:scale(.97)}" },
+    { "name": "Leaf Button", "kind": "button", "refersTo": "button-secondary", "description": "Secondary action on light ground: Choose dishes.", "html": "<button class=\"ds-btn-leaf\">Choose dishes</button>", "css": ".ds-btn-leaf{background:#1f7535;color:#fff;height:48px;padding:0 20px;border:0;border-radius:14px;font:600 16px Figtree,sans-serif}.ds-btn-leaf:hover{background:#196530}" },
+    { "name": "Pax Chip", "kind": "chip", "refersTo": "chip", "description": "Headcount and category filters.", "html": "<button class=\"ds-chip on\">20–25 pax</button> <button class=\"ds-chip\">40 pax</button>", "css": ".ds-chip{height:40px;padding:0 16px;border-radius:9999px;border:0;background:#fff;box-shadow:inset 0 0 0 1px rgb(13 21 13/.12);font:600 14px Figtree,sans-serif;color:#0d150d}.ds-chip.on{background:#1f7535;color:#fff;box-shadow:none}" },
+    { "name": "Field", "kind": "input", "refersTo": "input", "description": "Label above, error below.", "html": "<label class=\"ds-l\">Mobile number<input class=\"ds-in\" placeholder=\"0917 123 4567\"></label>", "css": ".ds-l{display:flex;flex-direction:column;gap:8px;font:600 14px Figtree,sans-serif;color:#0d150d}.ds-in{height:48px;border-radius:12px;border:2px solid rgb(13 21 13/.12);padding:0 14px;font:400 16px Figtree,sans-serif}.ds-in:focus{outline:0;border-color:#1f7535}" },
+    { "name": "Foil Tray", "kind": "custom", "refersTo": "tray-tag", "description": "Every food photo sits in a foil rim with a tray tag.", "html": "<figure class=\"ds-foil\"><div class=\"ds-img\"></div><figcaption>Pork Humba</figcaption></figure>", "css": ".ds-foil{position:relative;margin:0;width:180px;aspect-ratio:4/3;padding:5px;border-radius:14px;background:linear-gradient(145deg,#f2f4f2,#c9cecb 45%,#eef0ee 60%,#b9beba);box-shadow:0 10px 24px -12px rgb(13 21 13/.45)}.ds-img{height:100%;border-radius:10px;background:#7a3b1d}.ds-foil figcaption{position:absolute;left:8px;bottom:-8px;background:#fbfcc6;border-radius:8px;padding:2px 8px;font:700 12px Figtree,sans-serif}" }
+  ],
+  "narrative": {
+    "northStar": "The handaan table",
+    "overview": "The ordering site is the fiesta table seen from above: food on banana leaf, dishes in foil and bilao, and the customer's order visibly filling the table. The owner's logo colours are binding.",
+    "keyCharacteristics": ["Banana-leaf green surfaces", "Foil and bilao containers", "Prices and pax as the loudest type", "The table fills as you order", "Taglish warmth"],
+    "rules": [
+      { "name": "The Logo Rule", "body": "Only the badge's yellow, lime and greens, with chili reserved for errors.", "section": "colors" },
+      { "name": "Price Shouts", "body": "Price and headcount are the loudest type in every offer.", "section": "typography" }
+    ],
+    "dos": ["Put every food photo in a foil or bilao container", "Label placeholder photos honestly", "Frame delivery fees as estimates"],
+    "donts": ["No colours outside the logo family", "No fake testimonials or ratings", "No eyebrow labels", "Never list GCash"]
+  }
+}
