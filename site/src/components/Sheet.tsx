@@ -24,6 +24,10 @@ export function Sheet({ open, onClose, title, children, footer, wideClass = 'md:
   const panelRef = useRef<HTMLDivElement>(null)
   const lastFocus = useRef<HTMLElement | null>(null)
   const drag = useDragControls()
+  // Parents pass a new onClose on every render; keep the latest in a ref so the
+  // focus/scroll-lock effect below runs only when the sheet opens or closes.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
     if (!open) return
@@ -31,7 +35,7 @@ export function Sheet({ open, onClose, title, children, footer, wideClass = 'md:
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
       if (e.key === 'Tab' && panelRef.current) {
         const f = panelRef.current.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
         const list = Array.from(f).filter((el) => !el.hasAttribute('disabled'))
@@ -54,7 +58,7 @@ export function Sheet({ open, onClose, title, children, footer, wideClass = 'md:
       window.removeEventListener('keydown', onKey)
       lastFocus.current?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
 
   const hidden = reduce ? { opacity: 0 } : wide ? { x: '100%' } : { y: '100%' }
   const shown = reduce ? { opacity: 1 } : wide ? { x: 0 } : { y: 0 }
