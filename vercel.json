@@ -4,5 +4,5 @@
   "installCommand": "cd site && npm ci",
   "buildCommand": "cd site && npm run build",
   "outputDirectory": "site/dist",
-  "rewrites": [{ "source": "/.netlify/functions/order", "destination": "/api/order" }]
+  "rewrites": [{ "source": "/admin/:path*", "destination": "/index.html" }]
 }

@@ -9,6 +9,7 @@ import { TableBar } from './components/TableBar'
 import { TableSheet } from './components/TableSheet'
 import { Trays } from './components/Trays'
 import type { PAX_FILTERS } from './data/menu'
+import { MenuProvider } from './lib/menu'
 import { OrderProvider } from './lib/order'
 
 type PaxId = (typeof PAX_FILTERS)[number]['id']
@@ -19,6 +20,7 @@ export default function App() {
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   return (
+    <MenuProvider>
     <OrderProvider>
       <a href="#packages" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-[10px] focus:bg-sun focus:px-4 focus:py-2 focus:font-semibold">
         Skip to the menu
@@ -43,5 +45,6 @@ export default function App() {
       />
       <Checkout open={checkoutOpen} onClose={() => setCheckoutOpen(false)} />
     </OrderProvider>
+    </MenuProvider>
   )
 }

@@ -1,6 +1,7 @@
 import { Gift, Storefront, UsersThree } from '@phosphor-icons/react'
 import { useMemo, useState } from 'react'
-import { PACKAGES, PAX_FILTERS, type Package } from '../data/menu'
+import { PAX_FILTERS, type Package } from '../data/menu'
+import { useMenu } from '../lib/menu'
 import { peso, useOrder } from '../lib/order'
 import { PackageBuilder } from './PackageBuilder'
 import { Button, PriceTag } from './ui'
@@ -19,13 +20,14 @@ const paxText = (p: Package) => (p.paxMin === p.paxMax ? `${p.paxMin}` : `${p.pa
 
 export function Packages({ pax, onPax }: { pax: PaxId; onPax: (p: PaxId) => void }) {
   const { add } = useOrder()
+  const { packages: PACKAGES } = useMenu()
   const [building, setBuilding] = useState<Package | null>(null)
   const filter = PAX_FILTERS.find((f) => f.id === pax)!
 
   const list = useMemo(() => {
     const fits = (p: Package) => p.paxMax >= filter.min && p.paxMin <= filter.max
     return [...PACKAGES].sort((a, b) => Number(fits(b)) - Number(fits(a)) || a.price - b.price).map((p) => ({ p, fits: fits(p) }))
-  }, [filter])
+  }, [filter, PACKAGES])
 
   return (
     <section id="packages" className="mx-auto max-w-7xl px-4 py-14 md:px-8 md:py-20" aria-labelledby="packages-h">

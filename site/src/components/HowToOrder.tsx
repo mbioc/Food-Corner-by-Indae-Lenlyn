@@ -1,5 +1,6 @@
 import { MapPin, Prohibit, Receipt, SealCheck } from '@phosphor-icons/react'
-import { BUSINESS, PAYMENTS, ZONES, PICKUP_ID } from '../data/business'
+import { BUSINESS, PAYMENTS, PICKUP_ID } from '../data/business'
+import { useMenu } from '../lib/menu'
 import { feeLabel } from '../lib/order'
 import { asset } from '../lib/asset'
 
@@ -11,6 +12,7 @@ const STEPS = [
 ]
 
 export function HowToOrder() {
+  const { zones: ZONES } = useMenu()
   return (
     <section id="how" className="border-t border-ink/8 bg-white" aria-labelledby="how-h">
       <div className="mx-auto max-w-7xl px-4 py-16 md:px-8 md:py-24">
@@ -46,7 +48,7 @@ export function HowToOrder() {
                       <span className="font-semibold">{z.label}</span>
                       <span className="block text-sm text-ink-soft">{z.detail}</span>
                     </td>
-                    <td className="num whitespace-nowrap py-3 text-right font-bold text-leaf">{feeLabel(z.id)}</td>
+                    <td className="num whitespace-nowrap py-3 text-right font-bold text-leaf">{feeLabel(z.id, ZONES)}</td>
                   </tr>
                 ))}
                 <tr>

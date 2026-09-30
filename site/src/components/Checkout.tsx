@@ -1,7 +1,8 @@
 import { ArrowLeft, Check, CheckCircle, CopySimple, ImageSquare, MessengerLogo, Phone, WarningCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS, ZONES } from '../data/business'
+import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS } from '../data/business'
+import { useMenu } from '../lib/menu'
 import {
   EMPTY_FORM,
   OCCASIONS,
@@ -18,6 +19,7 @@ import {
   type Errors,
 } from '../lib/checkout'
 import { feeLabel, makeOrderId, peso, useOrder } from '../lib/order'
+import type { Zone } from '../data/business'
 import { Sheet } from './Sheet'
 import { Button, Field, inputClass } from './ui'
 
@@ -31,7 +33,8 @@ interface Done {
 }
 
 export function Checkout({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { resolved, subtotal, hasPickupOnly, clear } = useOrder()
+  const { lines, resolved, subtotal, hasPickupOnly, clear } = useOrder()
+  const { zones: ZONES, blocked } = useMenu()
   const reduce = useReducedMotion()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM)
@@ -63,7 +66,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   }
 
   const next = () => {
-    const e = validateStep(step, form, !!proof, hasPickupOnly)
+    const e = validateStep(step, form, !!proof, hasPickupOnly, blocked)
     setErrors(e)
     if (Object.keys(e).length) {
       const first = Object.keys(e)[0]
@@ -79,10 +82,15 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   const send = async () => {
     if (!proof) return
     setSending(true)
-    const text = orderText(orderId, resolved, subtotal, form)
-    const res = await submitOrder({ orderId, text, form, subtotal, amountPaid: due, proof })
+    const res = await submitOrder({ lines, form, proof })
     setSending(false)
-    setDone({ orderId, text, emailed: res.emailed, error: res.error })
+    if (res.rejected) {
+      // The server rejected the order (sold out, fully booked…): keep the table so the customer can fix it.
+      setErrors({ proof: res.error })
+      return
+    }
+    const id = res.orderId ?? orderId
+    setDone({ orderId: id, text: orderText(id, resolved, subtotal, form, ZONES), emailed: res.saved, error: res.error })
     clear()
   }
 
@@ -216,7 +224,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                             <span className="block font-semibold">{z.label}</span>
                             <span className={`block text-sm ${on ? 'text-white/80' : 'text-ink-soft'}`}>{z.detail}</span>
                           </span>
-                          <span className={`num shrink-0 font-bold ${on ? 'text-sun' : 'text-leaf'}`}>{feeLabel(z.id)}</span>
+                          <span className={`num shrink-0 font-bold ${on ? 'text-sun' : 'text-leaf'}`}>{feeLabel(z.id, ZONES)}</span>
                         </button>
                       )
                     })}
@@ -236,7 +244,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                     <Field label="Landmark" htmlFor="co-landmark" optional>
                       <input id="co-landmark" className={inputClass()} placeholder="Near the chapel, blue gate…" value={form.landmark} onChange={(e) => set('landmark', e.target.value)} />
                     </Field>
-                    <p className="text-sm text-ink-soft">The delivery fee ({feeLabel(zone.id)}) is paid separately. Lenlyn confirms the exact amount with you.</p>
+                    <p className="text-sm text-ink-soft">The delivery fee ({feeLabel(zone.id, ZONES)}) is paid separately. Lenlyn confirms the exact amount with you.</p>
                   </>
                 )}
                 <Field label="Notes for Lenlyn" htmlFor="co-notes" optional>
@@ -245,7 +253,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
               </div>
             ) : (
               <div className="grid gap-6">
-                <OrderRecap form={form} />
+                <OrderRecap form={form} zones={ZONES} />
                 {SETTINGS.allowDownpayment && (
                   <fieldset>
                     <legend className="text-sm font-semibold">How much will you pay now?</legend>
@@ -343,9 +351,9 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   )
 }
 
-function OrderRecap({ form }: { form: CheckoutForm }) {
+function OrderRecap({ form, zones }: { form: CheckoutForm; zones: Zone[] }) {
   const { resolved, subtotal } = useOrder()
-  const zone = ZONES.find((z) => z.id === form.zone)
+  const zone = zones.find((z) => z.id === form.zone)
   return (
     <div className="rounded-[18px] bg-tag p-4">
       <ul className="space-y-1.5 text-sm">
@@ -366,7 +374,7 @@ function OrderRecap({ form }: { form: CheckoutForm }) {
         {zone && (
           <p className="mt-1 flex justify-between text-ink-soft">
             <span>{zone.id === PICKUP_ID ? 'Pick-up' : `Delivery, ${zone.label}`}</span>
-            <span className="num">{feeLabel(zone.id)}{zone.id !== PICKUP_ID && !zone.quote ? ', paid separately' : ''}</span>
+            <span className="num">{feeLabel(zone.id, zones)}{zone.id !== PICKUP_ID && !zone.quote ? ', paid separately' : ''}</span>
           </p>
         )}
         <p className="mt-1 text-ink-soft">
@@ -399,13 +407,13 @@ function Confirmation({ done }: { done: Done }) {
 
       {done.emailed ? (
         <p className="mt-4 flex items-start gap-2 text-sm">
-          <Check size={18} weight="bold" className="mt-0.5 shrink-0 text-leaf" /> Your order and payment screenshot were sent to Lenlyn by email.
+          <Check size={18} weight="bold" className="mt-0.5 shrink-0 text-leaf" /> Your order and payment screenshot were sent to Lenlyn.
         </p>
       ) : (
         <p className="mt-4 flex items-start gap-2 rounded-[12px] bg-sun/40 p-3 text-sm">
           <WarningCircle size={20} weight="bold" className="mt-0.5 shrink-0 text-chili" />
           <span>
-            We couldn't email your order automatically. <strong>Please send it on Messenger</strong> with your payment screenshot so Lenlyn receives it.
+            We couldn't send your order automatically. <strong>Please send it on Messenger</strong> with your payment screenshot so Lenlyn receives it.
           </span>
         </p>
       )}

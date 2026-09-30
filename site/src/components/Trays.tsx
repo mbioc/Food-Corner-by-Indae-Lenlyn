@@ -1,10 +1,12 @@
 import { Plus } from '@phosphor-icons/react'
 import { useState } from 'react'
-import { TRAYS, TRAY_CATEGORIES, type TrayCategory } from '../data/menu'
+import { TRAY_CATEGORIES, type TrayCategory } from '../data/menu'
+import { useMenu } from '../lib/menu'
 import { peso, useOrder } from '../lib/order'
 
 export function Trays() {
   const { add, lines } = useOrder()
+  const { trays: TRAYS } = useMenu()
   const [cat, setCat] = useState<TrayCategory | 'all'>('all')
   const list = cat === 'all' ? TRAYS : TRAYS.filter((t) => t.category === cat)
   const qtyOf = (id: string) => lines.filter((l) => l.kind === 'tray' && l.refId === id).reduce((n, l) => n + l.qty, 0)

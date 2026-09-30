@@ -1,5 +1,5 @@
-import { BUSINESS, PAYMENTS, ZONES, PICKUP_ID, SETTINGS } from '../data/business'
-import { feeLabel, peso, type ResolvedLine } from './order'
+import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS, type Zone } from '../data/business'
+import { feeLabel, peso, type Line, type ResolvedLine } from './order'
 
 export interface CheckoutForm {
   name: string
@@ -43,7 +43,7 @@ export type Errors = Partial<Record<keyof CheckoutForm | 'proof', string>>
 
 const PH_MOBILE = /^(\+?63|0)9\d{9}$/
 
-export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, pickupOnly: boolean): Errors {
+export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, pickupOnly: boolean, blocked: string[] = []): Errors {
   const e: Errors = {}
   if (step === 0) {
     if (!f.name.trim()) e.name = 'Please enter your name.'
@@ -53,6 +53,7 @@ export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, p
   if (step === 1) {
     if (!f.eventDate) e.eventDate = 'Pick the date you need the food.'
     else if (f.eventDate < todayISO()) e.eventDate = 'That date has passed. Pick today or later.'
+    else if (blocked.includes(f.eventDate)) e.eventDate = 'Lenlyn is fully booked on this date. Please pick another day.'
     if (!f.eventTime) e.eventTime = 'Pick a time.'
     if (!f.zone) e.zone = 'Choose delivery or pick-up.'
     if (pickupOnly && f.zone && f.zone !== PICKUP_ID) e.zone = 'Your order has a pick-up-only package. Choose pick-up.'
@@ -89,8 +90,8 @@ export function formatTime(t: string) {
 }
 
 /** Plain-text order used for Messenger, email and the owner's records. */
-export function orderText(orderId: string, lines: ResolvedLine[], subtotal: number, f: CheckoutForm) {
-  const zone = ZONES.find((z) => z.id === f.zone)
+export function orderText(orderId: string, lines: ResolvedLine[], subtotal: number, f: CheckoutForm, zones: Zone[]) {
+  const zone = zones.find((z) => z.id === f.zone)
   const pay = PAYMENTS.find((p) => p.id === f.payChannel)
   const out: string[] = []
   out.push(`FOOD CORNER ORDER ${orderId}`)
@@ -101,7 +102,7 @@ export function orderText(orderId: string, lines: ResolvedLine[], subtotal: numb
   }
   out.push('')
   out.push(`Food total: ${peso(subtotal)}`)
-  if (zone) out.push(`${zone.id === PICKUP_ID ? 'Pick-up' : `Delivery (${zone.label})`}: ${feeLabel(zone.id)}${zone.id !== PICKUP_ID ? ' (to be confirmed)' : ''}`)
+  if (zone) out.push(`${zone.id === PICKUP_ID ? 'Pick-up' : `Delivery (${zone.label})`}: ${feeLabel(zone.id, zones)}${zone.id !== PICKUP_ID ? ' (to be confirmed)' : ''}`)
   if (pay) out.push(`Paid ${peso(amountDue(subtotal, f.payPlan))} via ${pay.bank}${f.reference ? ` · Ref ${f.reference}` : ''}`)
   out.push('')
   out.push(`When: ${formatDate(f.eventDate)}, ${formatTime(f.eventTime)}${f.occasion ? ` · ${f.occasion}` : ''}${f.pax ? ` · ${f.pax} pax` : ''}`)
@@ -132,30 +133,25 @@ export async function compressImage(file: File, maxSide = 1400, quality = 0.8): 
 }
 
 export interface SubmitResult {
-  emailed: boolean
+  saved: boolean
+  /** true when the server refused the order itself (sold out, fully booked…), so the customer must fix it */
+  rejected?: boolean
+  orderId?: string
+  emailed?: boolean
   error?: string
 }
 
-export async function submitOrder(payload: {
-  orderId: string
-  text: string
-  form: CheckoutForm
-  subtotal: number
-  amountPaid: number
-  proof: { dataUrl: string; name: string }
-}): Promise<SubmitResult> {
+export async function submitOrder(payload: { lines: Line[]; form: CheckoutForm; proof: { dataUrl: string; name: string } }): Promise<SubmitResult> {
   try {
     const res = await fetch(SETTINGS.orderEndpoint, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
+      body: JSON.stringify({ ...payload, lines: payload.lines.map(({ key: _key, ...l }) => l) }),
     })
-    if (!res.ok) {
-      const msg = await res.text().catch(() => '')
-      return { emailed: false, error: msg || `Server answered ${res.status}` }
-    }
-    return { emailed: true }
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) return { saved: false, rejected: res.status >= 400 && res.status < 500, error: data.error || `Server answered ${res.status}` }
+    return { saved: true, orderId: data.orderId, emailed: data.emailed }
   } catch {
-    return { emailed: false, error: 'No connection to the order server.' }
+    return { saved: false, error: 'No connection to the order server.' }
   }
 }

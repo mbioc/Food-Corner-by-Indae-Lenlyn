@@ -1,48 +1,56 @@
-# Food Corner by Indae Lenlyn: ordering site
+# Food Corner by Indae Lenlyn: ordering site and admin
 
-Customers build their order (packages with dish choices, lechon, à la carte trays), pick delivery or pick-up, pay by bank QR and upload the payment screenshot. Lenlyn gets the order by email with the screenshot attached. The customer gets an email copy and a one-tap Messenger handoff.
+- **Website** (`/`): customers build their order (packages with dish choices, lechon, trays), pick delivery or pick-up, pay by bank QR and upload the payment screenshot.
+- **Admin** (`/admin`): orders board, calendar, sales analytics, menu manager and team. Owners see everything; staff see orders, calendar and sales.
+
+Stack: Vite + React on Vercel. Supabase provides the database, logins, payment-screenshot storage and live order updates. Brevo sends the emails.
+
+## How it fits together
+
+| Piece | Where |
+|---|---|
+| Database schema and security rules | `supabase/migrations/001_init.sql` |
+| Starting menu (from the Facebook posts) | `supabase/seed.sql` |
+| Place an order (re-prices from the database, saves, emails) | `api/order.mjs` |
+| Change order status / payment / delivery fee (emails the customer) | `api/admin/order-status.mjs` |
+| Team: add staff, roles, block access, reset passwords | `api/admin/users.mjs` |
+| Prices shared by the website and the server | `site/src/shared/pricing.js` |
+| Admin screens | `site/src/admin/` |
+
+The website shows the built-in menu instantly, then switches to the live menu from the database. If the database can't be reached, customers still see a menu and can finish via Messenger.
+
+## Vercel environment variables
+
+Project → Settings → Environment Variables, ticked for **Production** (and Preview if you use it). Redeploy after changing them.
+
+| Name | Value |
+|---|---|
+| `VITE_SUPABASE_URL` | Supabase Project URL |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Supabase publishable key (`sb_publishable_…`) |
+| `SUPABASE_URL` | same Project URL |
+| `SUPABASE_SECRET_KEY` | Supabase secret key (`sb_secret_…`). Server only, never share it |
+| `BREVO_API_KEY` | Brevo API key |
+| `OWNER_EMAIL` | where new-order emails go |
+| `SENDER_EMAIL` | a sender verified in Brevo |
+| `SENDER_NAME` | e.g. `Indae Lenlyn` |
 
 ## Run locally
 
+Create `site/.env.local` with the same variables (it is gitignored), then:
+
 ```bash
+cd site
 npm install
-npm run dev        # http://localhost:5173
+npm run dev        # website on http://localhost:5173, admin on /admin, API on /api/*
 ```
 
-Local dev has no email server, so the site shows the "send it on Messenger" fallback after checkout. That's expected.
+## Order statuses
 
-## Deploy free on Netlify
-
-1. Push this `site/` folder to a GitHub repo, then in Netlify choose **Add new site → Import from Git**. `netlify.toml` already sets the build.
-2. Create a free **Brevo** account (brevo.com, 300 emails/day). Verify a sender email (Senders → Add a sender; a Gmail works). Create an API key (SMTP & API → API keys).
-3. In Netlify → Site configuration → Environment variables, add:
-
-| Variable | Value |
-|---|---|
-| `BREVO_API_KEY` | the Brevo API key |
-| `OWNER_EMAIL` | where Lenlyn wants new orders |
-| `SENDER_EMAIL` | the verified Brevo sender |
-| `SENDER_NAME` | optional, e.g. `Food Corner by Indae Lenlyn` |
-
-4. Redeploy, place a test order and check the inbox.
-
-## Deploy on Vercel
-
-The repo root has `vercel.json`, which builds the `site/` folder and serves it at the root URL. The order email runs from `api/order.mjs`. Add the same four environment variables in Vercel → Project → Settings → Environment Variables, then redeploy.
-
-## Where to edit things
-
-| What | File |
-|---|---|
-| Menu, prices, packages, dish choices | `src/data/menu.ts` |
-| Phone, Messenger, directions, delivery fees, bank accounts | `src/data/business.ts` |
-| Downpayment on/off | `SETTINGS.allowDownpayment` in `src/data/business.ts` |
-| Order email wording | `netlify/functions/order.mjs` |
+New → Confirmed → Cooking → Out for delivery / Ready for pick-up → Completed (or Cancelled). If the order has an email address, the customer is emailed on Confirmed, Out for delivery, Ready for pick-up and Cancelled. Staff can untick that per order.
 
 ## Still needed from Lenlyn
 
-- **Real food photos.** Replace the files in `public/img/dish/` and `public/img/hero/`, keeping the same names. Current images are crops of her AI posters.
-- **Real InstaPay QR images** for Maya, GoTyme, BPI, PNB and MariBank. Put them in `public/qr/` and set each `qr` path in `business.ts`. Until then checkout asks customers to message for the account details.
-- The email address that should receive orders.
-- Downpayment policy (full payment only for now), order lead time, and the Lechon Inyuha price.
-- Whether there's a Facebook **Page**. Messenger currently points to her personal profile (`m.me/juvilyn.cabaltera`).
+- Real food photos: upload them in **Admin → Menu** (tap a dish photo).
+- Real InstaPay QR images for each bank: set each `qr` path in `src/data/business.ts`.
+- Her email for `OWNER_EMAIL`. Add her in **Admin → Team** as Owner.
+- Downpayment policy, order lead time, and the Lechon Inyuha price.

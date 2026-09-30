@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
-import { PACKAGES, TRAYS, WHOLE_LECHON, LECHON_BELLY } from '../data/menu'
-import { ZONES, PICKUP_ID } from '../data/business'
-import { asset } from './asset'
+import type { Zone } from '../data/business'
+import { resolveLine as sharedResolve, zoneFeeLabel } from '../shared/pricing.js'
+import { usePricingMenu } from './menu'
 
 /* ---------- Line items ---------- */
 
@@ -31,49 +31,10 @@ export interface ResolvedLine {
   pickupOnly: boolean
 }
 
-export function resolveLine(line: Line): ResolvedLine | null {
-  if (line.kind === 'tray') {
-    const t = TRAYS.find((x) => x.id === line.refId)
-    if (!t) return null
-    return { line, title: t.name, detail: ['Large tray', ...(t.note ? [t.note] : [])], unitPrice: t.price, total: t.price * line.qty, img: t.img, pickupOnly: false }
-  }
-  if (line.kind === 'lechon') {
-    const o = WHOLE_LECHON.find((x) => x.id === line.refId)
-    if (!o) return null
-    return {
-      line,
-      title: `Whole Lechon, ${o.label}`,
-      detail: [`Free paluto: ${line.paluto ?? 'Paklay'}`],
-      unitPrice: o.price,
-      total: o.price * line.qty,
-      img: asset('/img/hero/lechon-whole.webp'),
-      pickupOnly: false,
-    }
-  }
-  if (line.kind === 'belly') {
-    const o = LECHON_BELLY.find((x) => x.id === line.refId)
-    if (!o) return null
-    return { line, title: `Lechon Belly, ${o.label}`, detail: [], unitPrice: o.price, total: o.price * line.qty, img: asset('/img/hero/lechon-belly.webp'), pickupOnly: false }
-  }
-  const p = PACKAGES.find((x) => x.id === line.refId)
-  if (!p) return null
-  const detail: string[] = []
-  for (const g of p.groups) {
-    const names = (line.choices[g.id] ?? []).map((id) => g.options.find((o) => o.id === id)?.name).filter(Boolean)
-    detail.push(`${g.label}: ${names.join(', ')}`)
-  }
-  if (p.fixed.length) detail.push(`Includes: ${p.fixed.map((f) => f.name).join(', ')}`)
-  if (p.freebies?.length) detail.push(`Free: ${p.freebies.join(', ')}`)
-  let addOnTotal = 0
-  for (const a of p.addOns ?? []) {
-    const units = line.addOns[a.id] ?? 0
-    if (units > 0) {
-      addOnTotal += units * a.price
-      detail.push(`Add-on: ${a.name}${a.perUnit ? ` +${units} ${a.perUnit}` : ''}`)
-    }
-  }
-  const unitPrice = p.price + addOnTotal
-  return { line, title: p.name, detail, unitPrice, total: unitPrice * line.qty, img: p.fixed[0]?.img ?? p.groups[0]?.options[0]?.img ?? '', pickupOnly: !!p.pickupOnly }
+type PricingMenu = ReturnType<typeof usePricingMenu>
+
+export function resolveLine(line: Line, menu: PricingMenu): ResolvedLine | null {
+  return sharedResolve(line, menu) as ResolvedLine | null
 }
 
 /* ---------- Store ---------- */
@@ -147,6 +108,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   const [flights, setFlights] = useState<Flight[]>([])
   const [bump, setBump] = useState(0)
   const barRef = useRef<HTMLElement | null>(null)
+  const menu = usePricingMenu()
 
   useEffect(() => {
     try {
@@ -157,7 +119,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
   }, [lines])
 
   const value = useMemo<OrderCtx>(() => {
-    const resolved = lines.map(resolveLine).filter((r): r is ResolvedLine => r !== null)
+    const resolved = lines.map((l) => resolveLine(l, menu)).filter((r): r is ResolvedLine => r !== null)
     return {
       lines,
       resolved,
@@ -166,7 +128,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       hasPickupOnly: resolved.some((r) => r.pickupOnly),
       add: (line, from) => {
         dispatch({ type: 'add', line })
-        const r = resolveLine({ ...(line as Line), key: 'x', qty: 1 })
+        const r = resolveLine({ ...(line as Line), key: 'x', qty: 1 }, menu)
         if (from && r) {
           setFlights((f) => [...f, { id: crypto.randomUUID(), img: r.img, from: from.getBoundingClientRect() }])
         } else {
@@ -184,7 +146,7 @@ export function OrderProvider({ children }: { children: ReactNode }) {
       bump,
       barRef,
     }
-  }, [lines, flights, bump])
+  }, [lines, flights, bump, menu])
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>
 }
@@ -199,12 +161,8 @@ export function useOrder() {
 
 export const peso = (n: number) => `₱${n.toLocaleString('en-PH')}`
 
-export function feeLabel(zoneId: string) {
-  const z = ZONES.find((x) => x.id === zoneId)
-  if (!z) return ''
-  if (z.id === PICKUP_ID) return 'Free'
-  if (z.quote) return 'To be quoted'
-  return z.feeMin === z.feeMax ? peso(z.feeMin) : `${peso(z.feeMin)}–${peso(z.feeMax)}`
+export function feeLabel(zoneId: string, zones: Zone[]) {
+  return zoneFeeLabel(zones.find((x) => x.id === zoneId))
 }
 
 export function makeOrderId(date = new Date()) {

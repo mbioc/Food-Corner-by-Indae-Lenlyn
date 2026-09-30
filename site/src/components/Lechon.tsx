@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { FREE_PALUTO, LECHON_BELLY, WHOLE_LECHON } from '../data/menu'
+import { FREE_PALUTO } from '../shared/pricing.js'
+import { useMenu } from '../lib/menu'
 import { BUSINESS } from '../data/business'
 import { peso, useOrder } from '../lib/order'
 import { Button } from './ui'
@@ -30,13 +31,16 @@ function Segmented<T extends string>({ name, value, onChange, options }: { name:
 
 export function Lechon() {
   const { add } = useOrder()
-  const [whole, setWhole] = useState(WHOLE_LECHON[0].id)
+  const { whole: WHOLE_LECHON, belly: LECHON_BELLY } = useMenu()
+  const [whole, setWhole] = useState(WHOLE_LECHON[0]?.id ?? '')
   const [paluto, setPaluto] = useState<string>(FREE_PALUTO[0])
-  const [belly, setBelly] = useState(LECHON_BELLY[0].id)
+  const [belly, setBelly] = useState(LECHON_BELLY[0]?.id ?? '')
   const wholeImg = useRef<HTMLDivElement>(null)
   const bellyImg = useRef<HTMLDivElement>(null)
-  const w = WHOLE_LECHON.find((x) => x.id === whole)!
-  const b = LECHON_BELLY.find((x) => x.id === belly)!
+  // Fall back to the first size if the owner removed the selected one.
+  const w = WHOLE_LECHON.find((x) => x.id === whole) ?? WHOLE_LECHON[0]
+  const b = LECHON_BELLY.find((x) => x.id === belly) ?? LECHON_BELLY[0]
+  if (!w || !b) return null
 
   return (
     <section id="lechon" className="leaf on-leaf" aria-labelledby="lechon-h">
@@ -60,13 +64,13 @@ export function Lechon() {
               </div>
               <p className="mt-1 text-sm text-white/75">Priced by live weight. For 40 guests, see the Lechon Package: 20 kg lechon plus 5 trays.</p>
               <div className="mt-5">
-                <Segmented name="Lechon size" value={whole} onChange={setWhole} options={WHOLE_LECHON.map((o) => ({ value: o.id, label: o.label, sub: peso(o.price) }))} />
+                <Segmented name="Lechon size" value={w?.id ?? ''} onChange={setWhole} options={WHOLE_LECHON.map((o) => ({ value: o.id, label: o.label, sub: peso(o.price) }))} />
               </div>
               <p className="mt-5 text-sm font-semibold text-white">Free paluto</p>
               <div className="mt-2 max-w-sm">
                 <Segmented name="Free paluto" value={paluto} onChange={setPaluto} options={FREE_PALUTO.map((p) => ({ value: p, label: p }))} />
               </div>
-              <Button className="mt-6 w-full sm:w-auto" size="lg" onClick={() => add({ kind: 'lechon', refId: whole, paluto }, wholeImg.current)}>
+              <Button className="mt-6 w-full sm:w-auto" size="lg" onClick={() => add({ kind: 'lechon', refId: w.id, paluto }, wholeImg.current)}>
                 <span className="num">Add {w.label} lechon · {peso(w.price)}</span>
               </Button>
             </div>
@@ -84,9 +88,9 @@ export function Lechon() {
                 </div>
                 <p className="mt-1 text-sm text-white/75">Crispy skin, juicy inside, freshly roasted.</p>
                 <div className="mt-4">
-                  <Segmented name="Belly size" value={belly} onChange={setBelly} options={LECHON_BELLY.map((o) => ({ value: o.id, label: o.label, sub: peso(o.price) }))} />
+                  <Segmented name="Belly size" value={b?.id ?? ''} onChange={setBelly} options={LECHON_BELLY.map((o) => ({ value: o.id, label: o.label, sub: peso(o.price) }))} />
                 </div>
-                <Button className="mt-5 w-full" onClick={() => add({ kind: 'belly', refId: belly }, bellyImg.current)}>
+                <Button className="mt-5 w-full" onClick={() => add({ kind: 'belly', refId: b.id }, bellyImg.current)}>
                   <span className="num">Add belly · {peso(b.price)}</span>
                 </Button>
               </div>

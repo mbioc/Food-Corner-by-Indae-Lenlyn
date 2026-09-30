@@ -66,6 +66,6 @@ export const SETTINGS = {
   // TODO(owner): confirm whether a downpayment is accepted instead of full payment.
   allowDownpayment: false,
   downpaymentRate: 0.5,
-  // Serverless endpoint that emails the owner and the customer (see netlify/functions/order.mjs).
-  orderEndpoint: '/.netlify/functions/order',
+  // Vercel function that saves the order and emails the owner and the customer (see /api/order.mjs).
+  orderEndpoint: '/api/order',
 }
