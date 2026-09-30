@@ -107,9 +107,9 @@ export function MenuManager() {
   return (
     <Page title="Menu">
       <p className="-mt-3 mb-5 text-ink-soft">Changes show on the website right away. Turn an item off to hide it when it's sold out.</p>
-      <div className="no-scrollbar -mx-4 mb-6 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0" role="tablist">
+      <div className="mb-6 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap" role="tablist">
         {TABS.map((t) => (
-          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={`h-10 shrink-0 cursor-pointer rounded-full px-4 text-sm font-semibold ${tab === t.id ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/12 hover:ring-leaf/50'}`}>
+          <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={`h-11 cursor-pointer rounded-full px-4 text-sm font-semibold ${tab === t.id ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/12 hover:ring-leaf/50'}`}>
             {t.label}
           </button>
         ))}

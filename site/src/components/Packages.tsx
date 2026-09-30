@@ -38,7 +38,7 @@ export function Packages({ pax, onPax }: { pax: PaxId; onPax: (p: PaxId) => void
           </h2>
           <p className="mt-3 text-lg text-ink-soft">Priced per headcount. Choose your dishes inside each package and we cook it fresh for your date.</p>
         </div>
-        <div className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0" role="group" aria-label="Filter by number of guests">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filter by number of guests">
           {PAX_FILTERS.map((f) => (
             <button
               key={f.id}

@@ -49,7 +49,7 @@ export function Orders() {
         </label>
       }
     >
-      <div className="no-scrollbar -mx-4 mb-5 flex gap-2 overflow-x-auto px-4 md:mx-0 md:px-0" role="tablist" aria-label="Order status">
+      <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Order status">
         {TABS.map((t) => (
           <button
             key={t.id}

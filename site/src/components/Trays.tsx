@@ -20,7 +20,7 @@ export function Trays() {
         <p className="mt-3 text-lg text-ink-soft">Every price is for one large foil tray. Mix them with a package or order them on their own.</p>
       </div>
 
-      <div className="no-scrollbar -mx-4 mt-8 flex gap-2 overflow-x-auto px-4 md:mx-0 md:flex-wrap md:px-0" role="group" aria-label="Filter trays">
+      <div className="mt-8 flex flex-wrap gap-2" role="group" aria-label="Filter trays">
         {[{ id: 'all' as const, label: 'All trays' }, ...TRAY_CATEGORIES].map((c) => (
           <button
             key={c.id}
