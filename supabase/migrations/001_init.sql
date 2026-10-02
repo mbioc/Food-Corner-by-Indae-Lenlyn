@@ -46,7 +46,7 @@ create table if not exists public.trays (
 
 create table if not exists public.lechon_options (
   id text primary key,
-  kind text not null check (kind in ('whole', 'belly')),
+  kind text not null check (kind in ('whole', 'belly', 'inyuha')),
   label text not null,
   kilos numeric not null,
   price integer not null check (price >= 0),

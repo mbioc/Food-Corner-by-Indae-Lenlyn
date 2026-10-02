@@ -440,9 +440,9 @@ function Lechon() {
           <Plus size={16} weight="bold" /> Add size
         </Button>
       </div>
-      {(['whole', 'belly'] as const).map((kind) => (
+      {(['whole', 'belly', 'inyuha'] as const).map((kind) => (
         <section key={kind} className="mb-6">
-          <h2 className="display mb-2 text-lg font-bold">{kind === 'whole' ? 'Whole lechon' : 'Lechon belly'}</h2>
+          <h2 className="display mb-2 text-lg font-bold">{kind === 'whole' ? 'Whole lechon' : kind === 'belly' ? 'Lechon belly' : 'Lechon Inyuha (customer brings the pig)'}</h2>
           <ul className="grid gap-2 sm:grid-cols-2">
             {rows
               .filter((r) => r.kind === kind)
@@ -470,6 +470,7 @@ function Lechon() {
               <select id="l-kind" className={inputClass()} value={draft.kind} onChange={(e) => setDraft({ ...draft, kind: e.target.value })} disabled={!!draft.id}>
                 <option value="whole">Whole lechon</option>
                 <option value="belly">Lechon belly</option>
+                <option value="inyuha">Lechon Inyuha (roasting fee)</option>
               </select>
             </Field>
             <div className="grid grid-cols-3 gap-3">

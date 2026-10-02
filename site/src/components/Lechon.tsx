@@ -1,6 +1,6 @@
+import { Plus } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
 import { FREE_PALUTO } from '../shared/pricing.js'
-import { LECHON_INYUHA } from '../data/menu'
 import { useMenu } from '../lib/menu'
 import { BUSINESS } from '../data/business'
 import { peso, useOrder } from '../lib/order'
@@ -32,7 +32,7 @@ function Segmented<T extends string>({ name, value, onChange, options }: { name:
 
 export function Lechon() {
   const { add } = useOrder()
-  const { whole: WHOLE_LECHON, belly: LECHON_BELLY } = useMenu()
+  const { whole: WHOLE_LECHON, belly: LECHON_BELLY, inyuha: INYUHA } = useMenu()
   const [whole, setWhole] = useState(WHOLE_LECHON[0]?.id ?? '')
   const [paluto, setPaluto] = useState<string>(FREE_PALUTO[0])
   const [belly, setBelly] = useState(LECHON_BELLY[0]?.id ?? '')
@@ -96,24 +96,31 @@ export function Lechon() {
                 </Button>
               </div>
             </article>
-            <aside className="rounded-[24px] bg-sun p-5 text-ink sm:p-6">
-              <h3 className="display text-xl font-extrabold">Have your own pig?</h3>
-              <p className="mt-1.5">Bring your own baboy and we roast it for you (Lechon Inyuha).</p>
-              <table className="mt-3 w-full text-left">
-                <caption className="sr-only">Roasting fee by weight of your pig</caption>
-                <tbody>
-                  {LECHON_INYUHA.map((r) => (
-                    <tr key={r.range} className="border-t border-ink/15">
-                      <th scope="row" className="num py-1.5 font-semibold">{r.range}</th>
-                      <td className="num py-1.5 text-right font-extrabold">{peso(r.price)}</td>
-                    </tr>
+            {INYUHA.length > 0 && (
+              <aside className="rounded-[24px] bg-sun p-5 text-ink sm:p-6">
+                <h3 className="display text-xl font-extrabold">Have your own pig?</h3>
+                <p className="mt-1.5">Bring your own baboy and we roast it for you (Lechon Inyuha). Pick the weight of your pig.</p>
+                <ul className="mt-3">
+                  {INYUHA.map((r) => (
+                    <li key={r.id} className="flex items-center gap-3 border-t border-ink/15 py-1.5">
+                      <span className="num flex-1 font-semibold">{r.label}</span>
+                      <span className="num font-extrabold">{peso(r.price)}</span>
+                      <button
+                        type="button"
+                        onClick={(e) => add({ kind: 'inyuha', refId: r.id }, e.currentTarget)}
+                        aria-label={`Add Lechon Inyuha roasting, ${r.label}, to your table`}
+                        className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-[12px] bg-leaf text-white transition-[background-color,transform] duration-200 hover:bg-leaf-600 active:scale-[0.94]"
+                      >
+                        <Plus size={20} weight="bold" />
+                      </button>
+                    </li>
                   ))}
-                </tbody>
-              </table>
-              <a href={`tel:${BUSINESS.phoneIntl}`} className="num mt-3 inline-block font-bold text-leaf-700 underline">
-                Call {BUSINESS.phone} to book
-              </a>
-            </aside>
+                </ul>
+                <a href={`tel:${BUSINESS.phoneIntl}`} className="num mt-3 inline-block font-bold text-leaf-700 underline">
+                  Questions? Call {BUSINESS.phone}
+                </a>
+              </aside>
+            )}
           </div>
         </div>
       </div>

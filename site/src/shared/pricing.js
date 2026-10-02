@@ -3,7 +3,7 @@
 
 /**
  * @typedef {{ id: string, name: string, price: number, img: string, category: string, note?: string | null }} Tray
- * @typedef {{ id: string, kind: 'whole' | 'belly', label: string, kilos: number, price: number }} LechonOption
+ * @typedef {{ id: string, kind: 'whole' | 'belly' | 'inyuha', label: string, kilos: number, price: number }} LechonOption
  * @typedef {{ id: string, name: string, img: string }} Opt
  * @typedef {{ id: string, label: string, choose: number, options: Opt[] }} ChoiceGroup
  * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number }} AddOn
@@ -27,18 +27,19 @@ export function resolveLine(line, menu) {
     if (!t) return null
     return { line: { ...line, qty }, title: t.name, detail: ['Large tray', ...(t.note ? [t.note] : [])], unitPrice: t.price, total: t.price * qty, img: t.img, pickupOnly: false }
   }
-  if (line.kind === 'lechon' || line.kind === 'belly') {
-    const o = menu.lechon.find((x) => x.id === line.refId && x.kind === (line.kind === 'lechon' ? 'whole' : 'belly'))
+  if (line.kind === 'lechon' || line.kind === 'belly' || line.kind === 'inyuha') {
+    const kind = line.kind === 'lechon' ? 'whole' : line.kind
+    const o = menu.lechon.find((x) => x.id === line.refId && x.kind === kind)
     if (!o) return null
-    const whole = o.kind === 'whole'
+    const whole = kind === 'whole'
     const paluto = FREE_PALUTO.includes(line.paluto) ? line.paluto : FREE_PALUTO[0]
     return {
       line: { ...line, qty, ...(whole ? { paluto } : {}) },
-      title: whole ? `Whole Lechon, ${o.label}` : `Lechon Belly, ${o.label}`,
-      detail: whole ? [`Free paluto: ${paluto}`] : [],
+      title: whole ? `Whole Lechon, ${o.label}` : kind === 'belly' ? `Lechon Belly, ${o.label}` : `Lechon Inyuha roasting, ${o.label}`,
+      detail: whole ? [`Free paluto: ${paluto}`] : kind === 'inyuha' ? ['You bring the pig, we roast it'] : [],
       unitPrice: o.price,
       total: o.price * qty,
-      img: whole ? menu.lechonImg?.whole ?? '' : menu.lechonImg?.belly ?? '',
+      img: menu.lechonImg?.[kind] ?? '',
       pickupOnly: false,
     }
   }

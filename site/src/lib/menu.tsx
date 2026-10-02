@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { LECHON_BELLY, PACKAGES, TRAYS, WHOLE_LECHON, type LechonOption, type Package, type Tray, type TrayCategory } from '../data/menu'
+import { LECHON_BELLY, LECHON_INYUHA, PACKAGES, TRAYS, WHOLE_LECHON, type LechonOption, type Package, type Tray, type TrayCategory } from '../data/menu'
 import { ZONES, type Zone } from '../data/business'
 import { asset } from './asset'
 
@@ -8,13 +8,14 @@ export interface Menu {
   packages: Package[]
   whole: LechonOption[]
   belly: LechonOption[]
+  inyuha: LechonOption[] // roasting fee when the customer brings the pig
   zones: Zone[]
   blocked: string[] // YYYY-MM-DD days Lenlyn is fully booked
   live: boolean // true once loaded from the database
 }
 
 /** The menu that shipped with the site: shown instantly, and used if the database can't be reached. */
-const STATIC_MENU: Menu = { trays: TRAYS, packages: PACKAGES, whole: WHOLE_LECHON, belly: LECHON_BELLY, zones: ZONES, blocked: [], live: false }
+const STATIC_MENU: Menu = { trays: TRAYS, packages: PACKAGES, whole: WHOLE_LECHON, belly: LECHON_BELLY, inyuha: LECHON_INYUHA, zones: ZONES, blocked: [], live: false }
 
 const SB_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const SB_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
@@ -43,6 +44,7 @@ export async function fetchMenu(): Promise<Menu> {
     trays: trays.map((t) => ({ id: t.id, name: t.name, price: t.price, img: imgUrl(t.img), category: t.category as TrayCategory, note: t.note ?? undefined })),
     whole: lechon.filter((o) => o.kind === 'whole').map((o) => ({ id: o.id, label: o.label, kilos: Number(o.kilos), price: o.price })),
     belly: lechon.filter((o) => o.kind === 'belly').map((o) => ({ id: o.id, label: o.label, kilos: Number(o.kilos), price: o.price })),
+    inyuha: lechon.filter((o) => o.kind === 'inyuha').map((o) => ({ id: o.id, label: o.label, kilos: Number(o.kilos), price: o.price })),
     packages: packages.map((p) => ({
       id: p.id,
       code: p.code,
@@ -93,8 +95,8 @@ export function usePricingMenu() {
       trays: m.trays,
       packages: m.packages,
       zones: m.zones,
-      lechon: [...m.whole.map((o) => ({ ...o, kind: 'whole' as const })), ...m.belly.map((o) => ({ ...o, kind: 'belly' as const }))],
-      lechonImg: { whole: asset('/img/hero/lechon-whole.webp'), belly: asset('/img/hero/lechon-belly.webp') },
+      lechon: [...m.whole.map((o) => ({ ...o, kind: 'whole' as const })), ...m.belly.map((o) => ({ ...o, kind: 'belly' as const })), ...m.inyuha.map((o) => ({ ...o, kind: 'inyuha' as const }))],
+      lechonImg: { whole: asset('/img/hero/lechon-whole.webp'), belly: asset('/img/hero/lechon-belly.webp'), inyuha: asset('/img/hero/lechon-spit.webp') },
     }),
     [m],
   )
