@@ -9,9 +9,9 @@ export const BUSINESS = {
   since: 2021,
   phone: '0951 510 6845',
   phoneIntl: '+639515106845',
-  // Messenger handle of the owner's profile. TODO: switch to a Facebook Page username if one is created.
-  messenger: 'juvilyn.cabaltera',
-  facebook: 'https://www.facebook.com/juvilyn.cabaltera',
+  // Messenger and Facebook links use the business Facebook Page (by page ID).
+  messenger: '100083567280877',
+  facebook: 'https://www.facebook.com/profile.php?id=100083567280877',
   address: 'Tabgas, Albuera, Leyte',
   directions: [
     'Beside Tabgas Fuel Station on the highway',
