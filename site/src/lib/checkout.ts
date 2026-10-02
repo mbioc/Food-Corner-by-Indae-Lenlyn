@@ -1,4 +1,4 @@
-import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS, TUPPERWARE, type Zone } from '../data/business'
+import { BUSINESS, PICKUP_ID, SETTINGS, TUPPERWARE, type Zone } from '../data/business'
 import { feeLabel, peso, type Line, type ResolvedLine } from './order'
 
 export interface CheckoutForm {
@@ -41,11 +41,11 @@ export const EMPTY_FORM: CheckoutForm = {
 
 export const OCCASIONS = ['Birthday', 'Fiesta', 'Baptism', 'Wedding', 'Reunion', 'Company event', 'Family salu-salo', 'Other']
 
-export type Errors = Partial<Record<keyof CheckoutForm | 'proof', string>>
+export type Errors = Partial<Record<keyof CheckoutForm | 'submit', string>>
 
 const PH_MOBILE = /^(\+?63|0)9\d{9}$/
 
-export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, pickupOnly: boolean, blocked: string[] = []): Errors {
+export function validateStep(step: number, f: CheckoutForm, pickupOnly: boolean, blocked: string[] = []): Errors {
   const e: Errors = {}
   if (step === 0) {
     if (!f.name.trim()) e.name = 'Please enter your name.'
@@ -62,8 +62,6 @@ export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, p
     if (f.zone && f.zone !== PICKUP_ID && !f.address.trim()) e.address = 'We need the delivery address.'
   }
   if (step === 2) {
-    if (!f.payChannel) e.payChannel = 'Choose where you sent the payment.'
-    if (!hasProof) e.proof = 'Upload the screenshot of your payment.'
   }
   return e
 }
@@ -99,7 +97,6 @@ export function formatTime(t: string) {
 /** Plain-text order used for Messenger, email and the owner's records. */
 export function orderText(orderId: string, lines: ResolvedLine[], subtotal: number, f: CheckoutForm, zones: Zone[], dp: Downpayment) {
   const zone = zones.find((z) => z.id === f.zone)
-  const pay = PAYMENTS.find((p) => p.id === f.payChannel)
   const out: string[] = []
   out.push(`FOOD CORNER ORDER ${orderId}`)
   out.push('')
@@ -111,7 +108,7 @@ export function orderText(orderId: string, lines: ResolvedLine[], subtotal: numb
   out.push(`Food total: ${peso(subtotal)}`)
   if (zone) out.push(`${zone.id === PICKUP_ID ? 'Pick-up' : `Delivery (${zone.label})`}: ${feeLabel(zone.id, zones)}${zone.id !== PICKUP_ID ? ' (to be confirmed)' : ''}`)
   const paid = amountDue(subtotal, f.payPlan, dp)
-  if (pay) out.push(`Paid ${peso(paid)}${paid < subtotal ? ' (down payment)' : ''} via ${pay.bank}${f.reference ? ` · Ref ${f.reference}` : ''}`)
+  out.push(`To pay: ${peso(paid)}${paid < subtotal ? ' (down payment)' : ''}. Lenlyn will send the payment details.`)
   if (paid < subtotal) out.push(`Balance: ${peso(subtotal - paid)}, due on pick-up or delivery`)
   out.push('')
   out.push(`When: ${formatDate(f.eventDate)}, ${formatTime(f.eventTime)}${f.occasion ? ` · ${f.occasion}` : ''}${f.pax ? ` · ${f.pax} pax` : ''}`)
@@ -151,7 +148,7 @@ export interface SubmitResult {
   error?: string
 }
 
-export async function submitOrder(payload: { lines: Line[]; form: CheckoutForm; proof: { dataUrl: string; name: string } }): Promise<SubmitResult> {
+export async function submitOrder(payload: { lines: Line[]; form: CheckoutForm }): Promise<SubmitResult> {
   try {
     const res = await fetch(SETTINGS.orderEndpoint, {
       method: 'POST',

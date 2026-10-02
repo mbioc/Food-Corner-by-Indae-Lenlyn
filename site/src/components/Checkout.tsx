@@ -1,14 +1,12 @@
-import { ArrowLeft, Check, CheckCircle, CopySimple, ImageSquare, MessengerLogo, Phone, WarningCircle } from '@phosphor-icons/react'
+import { ArrowLeft, Check, CheckCircle, CopySimple, MessengerLogo, Phone, WarningCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { BUSINESS, PAYMENTS, PICKUP_ID, TUPPERWARE, type PayChannel } from '../data/business'
-import { asset } from '../lib/asset'
+import { useMemo, useRef, useState } from 'react'
+import { BUSINESS, PICKUP_ID, TUPPERWARE } from '../data/business'
 import { useMenu } from '../lib/menu'
 import {
   EMPTY_FORM,
   OCCASIONS,
   amountDue,
-  compressImage,
   formatDate,
   formatTime,
   messengerUrl,
@@ -24,7 +22,7 @@ import type { Zone } from '../data/business'
 import { Sheet } from './Sheet'
 import { Button, Field, inputClass } from './ui'
 
-const STEP_TITLES = ['Your details', 'When and where', 'Pay and send']
+const STEP_TITLES = ['Your details', 'When and where', 'Review and send']
 
 interface Done {
   orderId: string
@@ -40,8 +38,6 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM)
   const [errors, setErrors] = useState<Errors>({})
-  const [proof, setProof] = useState<{ dataUrl: string; name: string } | null>(null)
-  const [proofBusy, setProofBusy] = useState(false)
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState<Done | null>(null)
   const orderId = useMemo(() => makeOrderId(), [open]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -53,7 +49,6 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   }
 
   const zone = ZONES.find((z) => z.id === form.zone)
-  const pay = PAYMENTS.find((p) => p.id === form.payChannel)
   const due = amountDue(subtotal, form.payPlan, dp)
 
   const close = () => {
@@ -61,13 +56,12 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
       setDone(null)
       setStep(0)
       setForm(EMPTY_FORM)
-      setProof(null)
     }
     onClose()
   }
 
   const next = () => {
-    const e = validateStep(step, form, !!proof, hasPickupOnly, blocked)
+    const e = validateStep(step, form, hasPickupOnly, blocked)
     setErrors(e)
     if (Object.keys(e).length) {
       const first = Object.keys(e)[0]
@@ -81,36 +75,17 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   }
 
   const send = async () => {
-    if (!proof) return
     setSending(true)
-    const res = await submitOrder({ lines, form, proof })
+    const res = await submitOrder({ lines, form })
     setSending(false)
     if (res.rejected) {
       // The server rejected the order (sold out, fully booked…): keep the table so the customer can fix it.
-      setErrors({ proof: res.error })
+      setErrors({ submit: res.error })
       return
     }
     const id = res.orderId ?? orderId
     setDone({ orderId: id, text: orderText(id, resolved, subtotal, form, ZONES, dp), emailed: res.saved, error: res.error })
     clear()
-  }
-
-  const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (!file.type.startsWith('image/')) {
-      setErrors((x) => ({ ...x, proof: 'Please upload an image (screenshot or photo).' }))
-      return
-    }
-    setProofBusy(true)
-    try {
-      setProof(await compressImage(file))
-      setErrors((x) => ({ ...x, proof: undefined }))
-    } catch {
-      setErrors((x) => ({ ...x, proof: 'We could not read that image. Try another screenshot.' }))
-    } finally {
-      setProofBusy(false)
-    }
   }
 
   const footer = done ? null : (
@@ -121,10 +96,10 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
         </Button>
       )}
       <div className="mr-auto min-w-0">
-        <p className="text-sm text-ink-soft">{step === 2 ? 'Amount to pay now' : 'Food total'}</p>
+        <p className="text-sm text-ink-soft">{step === 2 ? form.payPlan === 'down' ? 'Down payment' : 'Amount to pay' : 'Food total'}</p>
         <p className="num display text-xl font-extrabold">{peso(step === 2 ? due : subtotal)}</p>
       </div>
-      <Button size="lg" onClick={next} disabled={sending || proofBusy}>
+      <Button size="lg" onClick={next} disabled={sending}>
         {sending ? 'Sending…' : step < 2 ? 'Continue' : 'Send order'}
       </Button>
     </div>
@@ -266,7 +241,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                 <OrderRecap form={form} zones={ZONES} />
                 {dp.enabled && (
                   <fieldset>
-                    <legend className="text-sm font-semibold">How much will you pay now?</legend>
+                    <legend className="text-sm font-semibold">How would you like to pay?</legend>
                     <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Payment amount">
                       {(['full', 'down'] as const).map((p) => {
                         const on = form.payPlan === p
@@ -286,102 +261,21 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                     )}
                   </fieldset>
                 )}
-                <fieldset>
-                  <legend className="text-sm font-semibold">
-                    Send <span className="num">{peso(due)}</span> to one of these
-                  </legend>
-                  <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Payment channel">
-                    {PAYMENTS.map((p, i) => {
-                      const on = form.payChannel === p.id
-                      return (
-                        <button
-                          key={p.id}
-                          id={i === 0 ? 'co-payChannel' : undefined}
-                          type="button"
-                          role="radio"
-                          aria-checked={on}
-                          onClick={() => set('payChannel', p.id)}
-                          className={`flex cursor-pointer items-center gap-2 rounded-[14px] px-3 py-3 text-left font-semibold transition-[background-color,box-shadow] ${on ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/10 hover:ring-leaf/50'}`}
-                        >
-                          <span className="size-3 shrink-0 rounded-full ring-2 ring-white/70" style={{ background: p.color }} aria-hidden />
-                          {p.bank}
-                        </button>
-                      )
-                    })}
-                  </div>
-                  <p className="mt-2 text-sm font-semibold text-chili">GCash is not accepted.</p>
-                  {errors.payChannel && (
-                    <p className="mt-1 text-sm font-medium text-chili" role="alert">
-                      {errors.payChannel}
-                    </p>
-                  )}
-                </fieldset>
-
-                {pay && <PayCard pay={pay} amount={due} />}
-
-                <Field label="Screenshot of your payment" htmlFor="co-proof" error={errors.proof}>
-                  <label
-                    htmlFor="co-proof"
-                    className={`flex cursor-pointer items-center gap-3 rounded-[14px] border-2 border-dashed p-4 transition-colors hover:border-leaf ${errors.proof ? 'border-chili' : 'border-ink/20'} has-[:focus-visible]:border-leaf`}
-                  >
-                    {proof ? (
-                      <img src={proof.dataUrl} alt="Your payment screenshot" className="size-16 rounded-[10px] object-cover" />
-                    ) : (
-                      <span className="grid size-16 place-items-center rounded-[10px] bg-leaf/10 text-leaf">
-                        <ImageSquare size={28} weight="duotone" />
-                      </span>
-                    )}
-                    <span className="text-sm">
-                      <span className="block font-semibold">{proofBusy ? 'Preparing image…' : proof ? 'Screenshot attached. Tap to change.' : 'Tap to upload the screenshot'}</span>
-                      <span className="text-ink-soft">JPG or PNG from your banking app</span>
-                    </span>
-                    <input id="co-proof" type="file" accept="image/*" className="sr-only" onChange={onFile} />
-                  </label>
-                </Field>
-                <Field label="Reference number" htmlFor="co-reference" optional>
-                  <input id="co-reference" className={`num ${inputClass()}`} value={form.reference} onChange={(e) => set('reference', e.target.value)} />
-                </Field>
+                <p className="rounded-[14px] bg-white p-4 text-sm ring-1 ring-inset ring-ink/10">
+                  <span className="block font-semibold">No payment needed here.</span>
+                  <span className="text-ink-soft">After you send the order, Lenlyn will message you her QR code or account number for the payment.</span>
+                </p>
+                {errors.submit && (
+                  <p className="text-sm font-medium text-chili" role="alert">
+                    {errors.submit}
+                  </p>
+                )}
               </div>
             )}
           </motion.div>
         </AnimatePresence>
       </div>
     </Sheet>
-  )
-}
-
-function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
-  const [copied, setCopied] = useState(false)
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(pay.accountNumber)
-      setCopied(true)
-    } catch {
-      setCopied(false)
-    }
-  }
-  return (
-    <div className="rounded-[18px] bg-white p-4 ring-1 ring-inset ring-ink/10">
-      <p className="display text-lg font-bold">{pay.bank}</p>
-      <p className="text-sm">{pay.accountName}</p>
-      <p className="num mt-1 select-all text-xl font-extrabold tracking-wide">{pay.accountNumber}</p>
-      <Button variant="leaf" className="mt-3 w-full" onClick={copy}>
-        <CopySimple size={18} weight="bold" /> {copied ? 'Account number copied' : 'Transfer'}
-      </Button>
-      <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-ink-soft">
-        <li>Tap Transfer. The account number is copied for you.</li>
-        <li>
-          Open your bank or e-wallet app, paste the account number and send <span className="num font-semibold text-ink">{peso(amount)}</span>.
-        </li>
-      </ol>
-      <div className="mt-4 border-t border-ink/10 pt-4">
-        <p className="text-center text-sm font-semibold">Or scan this InstaPay QR</p>
-        <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="mx-auto mt-3 w-full max-w-64 rounded-[10px]" />
-        <a href={asset(pay.qr)} download={`food-corner-${pay.id}-qr.png`} className="mt-2 block text-center text-sm font-semibold text-leaf underline">
-          Save QR to your phone
-        </a>
-      </div>
-    </div>
   )
 }
 
@@ -433,24 +327,24 @@ function Confirmation({ done }: { done: Done }) {
         <CheckCircle size={44} weight="fill" className="mx-auto text-sun" />
         <p className="mt-2 text-white/85">Your order number</p>
         <p className="num display text-4xl font-extrabold text-sun">{done.orderId}</p>
-        <p className="mt-2 text-white/90">Salamat po! Lenlyn will check your payment and confirm by text or Messenger.</p>
+        <p className="mt-2 text-white/90">Salamat po! Lenlyn will message you the payment details (QR code or account number).</p>
       </div>
 
       {done.emailed ? (
         <p className="mt-4 flex items-start gap-2 text-sm">
-          <Check size={18} weight="bold" className="mt-0.5 shrink-0 text-leaf" /> Your order and payment screenshot were sent to Lenlyn.
+          <Check size={18} weight="bold" className="mt-0.5 shrink-0 text-leaf" /> Your order was sent to Lenlyn.
         </p>
       ) : (
         <p className="mt-4 flex items-start gap-2 rounded-[12px] bg-sun/40 p-3 text-sm">
           <WarningCircle size={20} weight="bold" className="mt-0.5 shrink-0 text-chili" />
           <span>
-            We couldn't send your order automatically. <strong>Please send it on Messenger</strong> with your payment screenshot so Lenlyn receives it.
+            We couldn't send your order automatically. <strong>Please send it on Messenger</strong> so Lenlyn receives it.
           </span>
         </p>
       )}
 
       <h3 className="display mt-6 text-lg font-bold">Send a copy on Messenger</h3>
-      <p className="mt-1 text-sm text-ink-soft">Copy your order, open Lenlyn's Messenger, then paste it and attach your payment screenshot.</p>
+      <p className="mt-1 text-sm text-ink-soft">Copy your order, open Lenlyn's Messenger and paste it. She will reply there with the payment details.</p>
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
         <Button variant="leaf" onClick={copyAndOpen}>
           <MessengerLogo size={20} weight="fill" /> Copy and open Messenger

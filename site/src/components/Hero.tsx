@@ -29,7 +29,7 @@ export function Hero({ pax, onPax }: { pax: PaxId; onPax: (p: PaxId) => void }) 
           Fill the handaan table. <span className="text-leaf">Lenlyn cooks everything on it.</span>
         </h1>
         <p className="mt-5 max-w-[52ch] text-lg leading-relaxed text-ink-soft">
-          Party trays, bilao and whole lechon from her kitchen in Tabgas, Albuera, cooking since {BUSINESS.since}. Pick a size, choose your dishes, pay by bank QR, and we deliver across Western Leyte.
+          Party trays, bilao and whole lechon from her kitchen in Tabgas, Albuera, cooking since {BUSINESS.since}. Pick a size, choose your dishes, send your order, and we deliver across Western Leyte.
         </p>
         <fieldset className="mt-8">
           <legend className="display text-lg font-bold">How many guests are you feeding?</legend>

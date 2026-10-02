@@ -7,8 +7,8 @@ import { asset } from '../lib/asset'
 const STEPS = [
   { t: 'Fill your table', d: 'Pick a package, lechon or trays. Choose your dishes inside each package.' },
   { t: 'Set the date and place', d: 'Tell us when and where. Delivery or pick-up at the kitchen.' },
-  { t: 'Pay by bank transfer', d: 'Pay in full or a down payment to MariBank or PNB, then upload the screenshot.' },
-  { t: 'Lenlyn confirms and cooks', d: 'She checks your order and the delivery fee, then cooks it fresh for your handaan.' },
+  { t: 'Send your order', d: 'Choose full payment or a down payment and tap Send order. No payment is needed on the website.' },
+  { t: 'Pay, then Lenlyn cooks', d: 'She messages you her QR code or account number. Once you pay, she confirms and cooks it fresh.' },
 ]
 
 export function HowToOrder() {
