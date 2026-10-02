@@ -13,6 +13,9 @@
  * @typedef {{ trays: Tray[], lechon: LechonOption[], packages: Package[], zones: Zone[] }} Menu
  */
 
+// Share of the food total paid up front when the customer chooses a down payment.
+export const DOWNPAYMENT_RATE = 0.5
+
 export const FREE_PALUTO = ['Paklay', 'Dinuguan']
 export const PICKUP_ID = 'pickup'
 

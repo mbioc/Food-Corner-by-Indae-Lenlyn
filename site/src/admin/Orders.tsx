@@ -106,6 +106,7 @@ export function Orders() {
                   <div className="col-span-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:justify-end">
                     <StatusPill status={o.status} />
                     {o.status !== 'cancelled' && <PayPill status={o.payment_status} />}
+                    {o.amount_paid < o.subtotal && <span className="inline-flex h-6 items-center whitespace-nowrap rounded-full bg-ink/8 px-2.5 text-xs font-bold">Balance {peso(o.subtotal - o.amount_paid)}</span>}
                     <span className="text-xs text-ink-soft md:hidden">· {timeAgo(o.created_at)}</span>
                   </div>
                 </button>

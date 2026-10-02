@@ -267,13 +267,23 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                 {SETTINGS.allowDownpayment && (
                   <fieldset>
                     <legend className="text-sm font-semibold">How much will you pay now?</legend>
-                    <div className="mt-2 grid grid-cols-2 gap-2">
-                      {(['full', 'down'] as const).map((p) => (
-                        <button key={p} type="button" role="radio" aria-checked={form.payPlan === p} onClick={() => set('payPlan', p)} className={`cursor-pointer rounded-[14px] px-3 py-3 font-semibold ${form.payPlan === p ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/10'}`}>
-                          {p === 'full' ? `Full · ${peso(subtotal)}` : `${SETTINGS.downpaymentRate * 100}% down · ${peso(Math.round(subtotal * SETTINGS.downpaymentRate))}`}
-                        </button>
-                      ))}
+                    <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Payment amount">
+                      {(['full', 'down'] as const).map((p) => {
+                        const on = form.payPlan === p
+                        const amount = p === 'full' ? subtotal : Math.round(subtotal * SETTINGS.downpaymentRate)
+                        return (
+                          <button key={p} type="button" role="radio" aria-checked={on} onClick={() => set('payPlan', p)} className={`cursor-pointer rounded-[14px] px-3 py-3 text-left transition-colors ${on ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/10 hover:ring-leaf/50'}`}>
+                            <span className="block text-sm font-semibold">{p === 'full' ? 'Full payment' : `${SETTINGS.downpaymentRate * 100}% down payment`}</span>
+                            <span className={`num display block text-xl font-extrabold ${on ? 'text-sun' : 'text-leaf'}`}>{peso(amount)}</span>
+                          </button>
+                        )
+                      })}
                     </div>
+                    {form.payPlan === 'down' && (
+                      <p className="mt-2 text-sm text-ink-soft">
+                        The balance of <span className="num font-semibold text-ink">{peso(subtotal - due)}</span> is paid on pick-up or delivery.
+                      </p>
+                    )}
                   </fieldset>
                 )}
                 <fieldset>

@@ -1,3 +1,5 @@
+import { DOWNPAYMENT_RATE } from '../shared/pricing.js'
+
 // Business facts and settings. Values marked TODO still need the owner's confirmation.
 
 export const BUSINESS = {
@@ -63,9 +65,9 @@ export const PAYMENTS: PayChannel[] = [
 export const TUPPERWARE = { fee: 150, per: 5 }
 
 export const SETTINGS = {
-  // TODO(owner): confirm whether a downpayment is accepted instead of full payment.
-  allowDownpayment: false,
-  downpaymentRate: 0.5,
+  // Customers may pay a down payment now and the balance on pick-up or delivery.
+  allowDownpayment: true,
+  downpaymentRate: DOWNPAYMENT_RATE,
   // Vercel function that saves the order and emails the owner and the customer (see /api/order.mjs).
   orderEndpoint: '/api/order',
 }

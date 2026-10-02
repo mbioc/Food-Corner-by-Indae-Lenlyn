@@ -182,9 +182,15 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
       <section className="mt-6">
         <h3 className="display text-lg font-bold">Payment</h3>
         <p className="mt-1 text-ink-soft">
-          <span className="num font-semibold text-ink">{peso(order.amount_paid)}</span> via {order.pay_channel ?? '—'}
+          <span className="num font-semibold text-ink">{peso(order.amount_paid)}</span>
+          {order.amount_paid < order.subtotal ? ' down payment' : ''} via {order.pay_channel ?? '—'}
           {order.reference ? ` · Ref ${order.reference}` : ''}
         </p>
+        {order.amount_paid < order.subtotal && (
+          <p className="mt-2 rounded-[12px] bg-sun/40 p-3 text-sm font-semibold">
+            Balance to collect on {pickup ? 'pick-up' : 'delivery'}: <span className="num">{peso(order.subtotal - order.amount_paid)}</span>
+          </p>
+        )}
         {order.proof_path ? (
           proofUrl ? (
             <a href={proofUrl} target="_blank" rel="noreferrer" className="mt-3 block w-fit">

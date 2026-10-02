@@ -1,7 +1,7 @@
 // POST /api/order: a customer places an order from the website.
 // Prices are recomputed from the database, never trusted from the browser.
 
-import { choiceError, PICKUP_ID, peso, resolveLine, zoneFeeLabel } from '../site/src/shared/pricing.js'
+import { choiceError, DOWNPAYMENT_RATE, PICKUP_ID, peso, resolveLine, zoneFeeLabel } from '../site/src/shared/pricing.js'
 import { esc, page, sendEmail } from '../server/email.mjs'
 import { loadMenu } from '../server/menu.mjs'
 import { db, HttpError, route, storage } from '../server/supabase.mjs'
@@ -40,6 +40,7 @@ export const POST = route(async (request) => {
     landmark: clean(f.landmark, 200),
     notes: clean(f.notes, 600),
     tupperware: f.tupperware === true,
+    down: f.payPlan === 'down',
     payChannel: clean(f.payChannel, 40),
     reference: clean(f.reference, 80),
   }
@@ -66,6 +67,7 @@ export const POST = route(async (request) => {
   const subtotal = resolved.reduce((n, r) => n + r.total, 0)
   const PAY = { maribank: 'MariBank', pnb: 'PNB' }
   form.payChannel = PAY[form.payChannel] ?? form.payChannel
+  const amountPaid = form.down ? Math.round(subtotal * DOWNPAYMENT_RATE) : subtotal
   const pickupOnly = resolved.some((r) => r.pickupOnly)
 
   const zone = menu.zones.find((z) => z.id === form.zone)
@@ -91,7 +93,8 @@ export const POST = route(async (request) => {
     '',
     `Food total: ${peso(subtotal)}`,
     `${zone.id === PICKUP_ID ? 'Pick-up' : `Delivery (${zone.label})`}: ${zoneFeeLabel(zone)}${zone.id !== PICKUP_ID ? ' (to be confirmed)' : ''}`,
-    `Paid ${peso(subtotal)} via ${form.payChannel || '—'}${form.reference ? ` · Ref ${form.reference}` : ''}`,
+    `Paid ${peso(amountPaid)}${form.down ? ' (down payment)' : ''} via ${form.payChannel || '—'}${form.reference ? ` · Ref ${form.reference}` : ''}`,
+    ...(form.down ? [`Balance: ${peso(subtotal - amountPaid)}, due on pick-up or delivery`] : []),
     '',
     `When: ${fmtDate(form.eventDate)}, ${fmtTime(form.eventTime)}${form.occasion ? ` · ${form.occasion}` : ''}${form.pax ? ` · ${form.pax} pax` : ''}`,
     `Name: ${form.name}`,
@@ -123,7 +126,7 @@ export const POST = route(async (request) => {
     items,
     subtotal,
     delivery_fee: zone.id === PICKUP_ID ? 0 : zone.feeMin === zone.feeMax && !zone.quote ? zone.feeMin : null,
-    amount_paid: subtotal,
+    amount_paid: amountPaid,
     proof_path: proofPath,
     summary,
   })
