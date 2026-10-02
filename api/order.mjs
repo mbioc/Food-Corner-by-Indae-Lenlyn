@@ -136,9 +136,15 @@ export const POST = route(async (request) => {
   await db.insert('order_events', { order_id: orderId, status: 'pending', note: 'Order placed on the website', actor_name: form.name })
 
   let emailed = false
-  if (process.env.OWNER_EMAIL) {
+  // The admin panel's setting wins; the OWNER_EMAIL env var is only a fallback.
+  const [notify] = await db.select('notify_settings', 'id=eq.1&select=owner_emails').catch(() => [])
+  const owners = (notify?.owner_emails || process.env.OWNER_EMAIL || '')
+    .split(',')
+    .map((e) => e.trim())
+    .filter((e) => /^\S+@\S+\.\S+$/.test(e))
+  if (owners.length) {
     emailed = await sendEmail({
-      to: [{ email: process.env.OWNER_EMAIL, name: 'Lenlyn' }],
+      to: owners.map((email) => ({ email })),
       replyTo: form.email ? { email: form.email, name: form.name } : undefined,
       subject: `New order ${orderId} · ${form.name} · ${form.eventDate}`,
       html: page(`New order ${orderId}`, `From <b>${esc(form.name)}</b> · <a href="tel:${esc(form.mobile)}">${esc(form.mobile)}</a>. Payment screenshot attached. Open the admin panel to confirm it.`, summary),

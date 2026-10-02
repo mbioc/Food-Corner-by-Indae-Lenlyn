@@ -19,7 +19,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'packages', label: 'Packages' },
   { id: 'lechon', label: 'Lechon' },
   { id: 'zones', label: 'Delivery areas' },
-  { id: 'payment', label: 'Payment' },
+  { id: 'payment', label: 'Settings' },
 ]
 
 const slug = (s: string) =>
@@ -119,7 +119,12 @@ export function MenuManager() {
       {tab === 'packages' && <Packages />}
       {tab === 'lechon' && <Lechon />}
       {tab === 'zones' && <Zones />}
-      {tab === 'payment' && <PaymentSettings />}
+      {tab === 'payment' && (
+        <div className="grid gap-6">
+          <NotifySettings />
+          <PaymentSettings />
+        </div>
+      )}
     </Page>
   )
 }
@@ -554,6 +559,52 @@ function Zones() {
     </>
   )
 }
+/* ---------- Order notification email ---------- */
+
+function NotifySettings() {
+  const { toast } = useAdmin()
+  const [emails, setEmails] = useState('')
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('notify_settings')
+      .select('owner_emails')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        setEmails(data?.owner_emails ?? '')
+        setLoading(false)
+      })
+  }, [])
+
+  const list = emails.split(',').map((e) => e.trim()).filter(Boolean)
+  const valid = list.length > 0 && list.every((e) => /^\S+@\S+\.\S+$/.test(e))
+  const save = async () => {
+    setBusy(true)
+    const { error } = await supabase.from('notify_settings').update({ owner_emails: list.join(', ') }).eq('id', 1)
+    setBusy(false)
+    toast(error ? error.message : 'Notification email saved')
+  }
+
+  if (loading) return <div className="h-32 animate-pulse rounded-[20px] bg-ink/5" />
+  return (
+    <div className="grid max-w-xl gap-4 rounded-[20px] bg-white p-5 ring-1 ring-inset ring-ink/8">
+      <div>
+        <h2 className="display text-lg font-bold">New-order emails</h2>
+        <p className="text-sm text-ink-soft">Each new order is emailed here with the payment screenshot attached.</p>
+      </div>
+      <Field label="Send new orders to" htmlFor="notify-emails" error={valid ? undefined : 'Enter at least one valid email address.'} hint={valid ? 'For more than one address, separate them with commas.' : undefined}>
+        <input id="notify-emails" type="text" inputMode="email" autoComplete="off" className={inputClass(!valid)} value={emails} onChange={(e) => setEmails(e.target.value)} />
+      </Field>
+      <Button className="w-fit" disabled={busy || !valid} onClick={save}>
+        {busy ? 'Saving…' : 'Save'}
+      </Button>
+    </div>
+  )
+}
+
 /* ---------- Payment ---------- */
 
 function PaymentSettings() {
