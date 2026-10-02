@@ -1,5 +1,5 @@
 import { MapPin, Prohibit, Receipt, SealCheck } from '@phosphor-icons/react'
-import { BUSINESS, PAYMENTS, PICKUP_ID } from '../data/business'
+import { BUSINESS, PAYMENTS, PICKUP_ID, TUPPERWARE } from '../data/business'
 import { useMenu } from '../lib/menu'
 import { feeLabel } from '../lib/order'
 import { asset } from '../lib/asset'
@@ -7,7 +7,7 @@ import { asset } from '../lib/asset'
 const STEPS = [
   { t: 'Fill your table', d: 'Pick a package, lechon or trays. Choose your dishes inside each package.' },
   { t: 'Set the date and place', d: 'Tell us when and where. Delivery or pick-up at the kitchen.' },
-  { t: 'Pay by bank QR', d: 'Scan Maya, GoTyme, BPI, PNB or MariBank, then upload the screenshot.' },
+  { t: 'Pay by bank transfer', d: 'Send to MariBank or PNB by account number or QR, then upload the screenshot.' },
   { t: 'Lenlyn confirms and cooks', d: 'She checks your order and the delivery fee, then cooks it fresh for your handaan.' },
 ]
 
@@ -75,6 +75,13 @@ export function HowToOrder() {
               </ul>
               <p className="mt-3 inline-flex items-center gap-2 rounded-[12px] bg-chili/8 px-3 py-2 text-sm font-semibold text-chili">
                 <Prohibit size={18} weight="bold" /> Sorry po, GCash is not accepted.
+              </p>
+            </div>
+
+            <div>
+              <h3 className="display text-2xl font-extrabold">Packaging</h3>
+              <p className="mt-2 text-ink-soft">
+                Food comes in aluminum trays at no extra cost. They can't be stacked on a rider's motor because they bend. Prefer white tupperware containers? Add <span className="num font-semibold text-ink">₱{TUPPERWARE.fee}</span> for every {TUPPERWARE.per} dishes (not per piece).
               </p>
             </div>
 

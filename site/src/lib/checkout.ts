@@ -1,4 +1,4 @@
-import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS, type Zone } from '../data/business'
+import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS, TUPPERWARE, type Zone } from '../data/business'
 import { feeLabel, peso, type Line, type ResolvedLine } from './order'
 
 export interface CheckoutForm {
@@ -14,6 +14,7 @@ export interface CheckoutForm {
   address: string
   landmark: string
   notes: string
+  tupperware: boolean
   payChannel: string
   payPlan: 'full' | 'down'
   reference: string
@@ -32,6 +33,7 @@ export const EMPTY_FORM: CheckoutForm = {
   address: '',
   landmark: '',
   notes: '',
+  tupperware: false,
   payChannel: '',
   payPlan: 'full',
   reference: '',
@@ -114,6 +116,7 @@ export function orderText(orderId: string, lines: ResolvedLine[], subtotal: numb
     out.push(`Address: ${f.address}`)
     if (f.landmark) out.push(`Landmark: ${f.landmark}`)
   }
+  if (f.tupperware) out.push(`Packaging: white tupperware containers (+₱${TUPPERWARE.fee} per ${TUPPERWARE.per} dishes, Lenlyn confirms the amount)`)
   if (f.notes) out.push(`Notes: ${f.notes}`)
   return out.join('\n')
 }

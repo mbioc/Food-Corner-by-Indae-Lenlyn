@@ -89,6 +89,14 @@ export const LECHON_BELLY: LechonOption[] = [
 
 export const FREE_PALUTO = ['Paklay', 'Dinuguan'] as const
 
+// Roasting fee when the customer brings their own pig (Lechon Inyuha Babuy).
+export const LECHON_INYUHA = [
+  { range: '20 to 40 kg', price: 2500 },
+  { range: '40 to 50 kg', price: 2800 },
+  { range: '50 to 60 kg', price: 3000 },
+  { range: '60 to 70 kg', price: 3500 },
+]
+
 /* ---------- Packages ---------- */
 
 export interface ChoiceGroup {
@@ -146,7 +154,7 @@ export const PACKAGES: Package[] = [
     code: 'BLO-LB',
     name: '3 Bilao with Lechon Belly',
     price: 2900,
-    paxMin: 15,
+    paxMin: 17,
     paxMax: 17,
     summary: 'The 3 bilao set plus 3 kg of lechon belly.',
     fixed: [

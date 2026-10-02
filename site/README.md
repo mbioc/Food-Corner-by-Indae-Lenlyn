@@ -51,6 +51,5 @@ New → Confirmed → Cooking → Out for delivery / Ready for pick-up → Compl
 ## Still needed from Lenlyn
 
 - Real food photos: upload them in **Admin → Menu** (tap a dish photo).
-- Real InstaPay QR images for each bank: set each `qr` path in `src/data/business.ts`.
 - Her email for `OWNER_EMAIL`. Add her in **Admin → Team** as Owner.
-- Downpayment policy, order lead time, and the Lechon Inyuha price.
+- Downpayment policy and order lead time.

@@ -48,19 +48,19 @@ export interface PayChannel {
   id: string
   bank: string
   accountName: string
-  accountHint: string
-  // Path to the real InstaPay QR image in /public/qr. null until the owner provides it.
-  qr: string | null
+  accountNumber: string
+  // InstaPay QR image in /public/qr
+  qr: string
   color: string
 }
 
 export const PAYMENTS: PayChannel[] = [
-  { id: 'maya', bank: 'Maya', accountName: 'Juvilyn Cabaltera', accountHint: '+63 ••• ••• 6797', qr: null, color: '#00B464' },
-  { id: 'gotyme', bank: 'GoTyme Bank', accountName: 'Juvilyn Cabaltera', accountHint: '•••• 8241', qr: null, color: '#0A2540' },
-  { id: 'bpi', bank: 'BPI', accountName: 'Indae Len', accountHint: '•••• 293', qr: null, color: '#B11116' },
-  { id: 'pnb', bank: 'PNB', accountName: 'Juvilyn Cabaltera', accountHint: '•••• 4807', qr: null, color: '#1D3E8A' },
-  { id: 'maribank', bank: 'MariBank', accountName: 'Juvilyn Cabaltera', accountHint: '•••• 5610', qr: null, color: '#F05A22' },
+  { id: 'maribank', bank: 'MariBank', accountName: 'Juvilyn Cabaltera', accountNumber: '10948965610', qr: '/qr/maribank.png', color: '#F05A22' },
+  { id: 'pnb', bank: 'PNB', accountName: 'Juvilyn Cabaltera', accountNumber: '313710204807', qr: '/qr/pnb.png', color: '#1D3E8A' },
 ]
+
+// White tupperware containers instead of aluminum trays (the owner's packaging notice).
+export const TUPPERWARE = { fee: 150, per: 5 }
 
 export const SETTINGS = {
   // TODO(owner): confirm whether a downpayment is accepted instead of full payment.

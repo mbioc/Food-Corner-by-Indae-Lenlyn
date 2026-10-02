@@ -1,7 +1,8 @@
 import { ArrowLeft, Check, CheckCircle, CopySimple, ImageSquare, MessengerLogo, Phone, WarningCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS } from '../data/business'
+import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS, TUPPERWARE, type PayChannel } from '../data/business'
+import { asset } from '../lib/asset'
 import { useMenu } from '../lib/menu'
 import {
   EMPTY_FORM,
@@ -247,6 +248,15 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                     <p className="text-sm text-ink-soft">The delivery fee ({feeLabel(zone.id, ZONES)}) is paid separately. Lenlyn confirms the exact amount with you.</p>
                   </>
                 )}
+                <label className="flex cursor-pointer items-start gap-3 rounded-[14px] bg-white p-4 ring-1 ring-inset ring-ink/10">
+                  <input type="checkbox" checked={form.tupperware} onChange={(e) => set('tupperware', e.target.checked)} className="mt-1 size-5 shrink-0 accent-[var(--color-leaf)]" />
+                  <span>
+                    <span className="block font-semibold">Use white tupperware containers</span>
+                    <span className="block text-sm text-ink-soft">
+                      Aluminum trays are free. Tupperware adds <span className="num">₱{TUPPERWARE.fee}</span> for every {TUPPERWARE.per} dishes, paid separately. Lenlyn confirms the amount.
+                    </span>
+                  </span>
+                </label>
                 <Field label="Notes for Lenlyn" htmlFor="co-notes" optional>
                   <textarea id="co-notes" rows={2} className={`${inputClass()} h-auto py-3`} placeholder="Less spicy, extra sauce, gate code…" value={form.notes} onChange={(e) => set('notes', e.target.value)} />
                 </Field>
@@ -268,7 +278,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                 )}
                 <fieldset>
                   <legend className="text-sm font-semibold">
-                    Send <span className="num">{peso(due)}</span> through InstaPay to one of these
+                    Send <span className="num">{peso(due)}</span> to one of these
                   </legend>
                   <div className="mt-2.5 grid grid-cols-2 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Payment channel">
                     {PAYMENTS.map((p, i) => {
@@ -297,28 +307,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                   )}
                 </fieldset>
 
-                {pay && (
-                  <div className="flex gap-4 rounded-[18px] bg-white p-4 ring-1 ring-inset ring-ink/10">
-                    {pay.qr ? (
-                      <img src={pay.qr} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="size-40 shrink-0 rounded-[10px] object-contain" />
-                    ) : (
-                      <div className="grid size-28 shrink-0 place-items-center rounded-[12px] bg-ink/5 p-2 text-center text-xs font-semibold text-ink-soft">QR code coming soon</div>
-                    )}
-                    <div className="min-w-0 text-sm">
-                      <p className="display text-lg font-bold">{pay.bank}</p>
-                      <p>{pay.accountName}</p>
-                      <p className="num text-ink-soft">{pay.accountHint}</p>
-                      {!pay.qr && (
-                        <p className="mt-2 text-ink-soft">
-                          Message Lenlyn for the full account number or QR before paying.{' '}
-                          <a href={messengerUrl()} target="_blank" rel="noreferrer" className="font-semibold text-leaf underline">
-                            Open Messenger
-                          </a>
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
+                {pay && <PayCard pay={pay} amount={due} />}
 
                 <Field label="Screenshot of your payment" htmlFor="co-proof" error={errors.proof}>
                   <label
@@ -348,6 +337,41 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
         </AnimatePresence>
       </div>
     </Sheet>
+  )
+}
+
+function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(pay.accountNumber)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+    }
+  }
+  return (
+    <div className="rounded-[18px] bg-white p-4 ring-1 ring-inset ring-ink/10">
+      <p className="display text-lg font-bold">{pay.bank}</p>
+      <p className="text-sm">{pay.accountName}</p>
+      <p className="num mt-1 select-all text-xl font-extrabold tracking-wide">{pay.accountNumber}</p>
+      <Button variant="leaf" className="mt-3 w-full" onClick={copy}>
+        <CopySimple size={18} weight="bold" /> {copied ? 'Account number copied' : 'Transfer'}
+      </Button>
+      <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-ink-soft">
+        <li>Tap Transfer. The account number is copied for you.</li>
+        <li>
+          Open your bank or e-wallet app, paste the account number and send <span className="num font-semibold text-ink">{peso(amount)}</span>.
+        </li>
+      </ol>
+      <details className="mt-4 border-t border-ink/10 pt-3">
+        <summary className="cursor-pointer text-sm font-semibold text-leaf">Or pay by InstaPay QR</summary>
+        <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="mx-auto mt-3 w-full max-w-64 rounded-[10px]" loading="lazy" />
+        <a href={asset(pay.qr)} download={`food-corner-${pay.id}-qr.png`} className="mt-2 block text-center text-sm font-semibold text-leaf underline">
+          Save QR to your phone
+        </a>
+      </details>
+    </div>
   )
 }
 

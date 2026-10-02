@@ -39,6 +39,7 @@ export const POST = route(async (request) => {
     address: clean(f.address, 400),
     landmark: clean(f.landmark, 200),
     notes: clean(f.notes, 600),
+    tupperware: f.tupperware === true,
     payChannel: clean(f.payChannel, 40),
     reference: clean(f.reference, 80),
   }
@@ -63,6 +64,8 @@ export const POST = route(async (request) => {
     resolved.push(r)
   }
   const subtotal = resolved.reduce((n, r) => n + r.total, 0)
+  const PAY = { maribank: 'MariBank', pnb: 'PNB' }
+  form.payChannel = PAY[form.payChannel] ?? form.payChannel
   const pickupOnly = resolved.some((r) => r.pickupOnly)
 
   const zone = menu.zones.find((z) => z.id === form.zone)
@@ -96,6 +99,7 @@ export const POST = route(async (request) => {
     ...(form.email ? [`Email: ${form.email}`] : []),
     ...(form.fbName ? [`Facebook: ${form.fbName}`] : []),
     ...(zone.id !== PICKUP_ID ? [`Address: ${form.address}`, ...(form.landmark ? [`Landmark: ${form.landmark}`] : [])] : []),
+    ...(form.tupperware ? ['Packaging: white tupperware containers (+₱150 per 5 dishes, Lenlyn confirms the amount)'] : []),
     ...(form.notes ? [`Notes: ${form.notes}`] : []),
   ].join('\n')
 
@@ -113,7 +117,7 @@ export const POST = route(async (request) => {
     zone_label: zone.label,
     address: form.address || null,
     landmark: form.landmark || null,
-    notes: form.notes || null,
+    notes: [form.tupperware ? 'Wants white tupperware containers (+₱150 per 5 dishes).' : '', form.notes].filter(Boolean).join(' ') || null,
     pay_channel: form.payChannel || null,
     reference: form.reference || null,
     items,

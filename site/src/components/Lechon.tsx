@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
 import { FREE_PALUTO } from '../shared/pricing.js'
+import { LECHON_INYUHA } from '../data/menu'
 import { useMenu } from '../lib/menu'
 import { BUSINESS } from '../data/business'
 import { peso, useOrder } from '../lib/order'
@@ -97,11 +98,20 @@ export function Lechon() {
             </article>
             <aside className="rounded-[24px] bg-sun p-5 text-ink sm:p-6">
               <h3 className="display text-xl font-extrabold">Have your own pig?</h3>
-              <p className="mt-1.5">
-                We also roast lechon from your own baboy (Lechon Inyuha). Message or call Lenlyn for the price.
-              </p>
+              <p className="mt-1.5">Bring your own baboy and we roast it for you (Lechon Inyuha).</p>
+              <table className="mt-3 w-full text-left">
+                <caption className="sr-only">Roasting fee by weight of your pig</caption>
+                <tbody>
+                  {LECHON_INYUHA.map((r) => (
+                    <tr key={r.range} className="border-t border-ink/15">
+                      <th scope="row" className="num py-1.5 font-semibold">{r.range}</th>
+                      <td className="num py-1.5 text-right font-extrabold">{peso(r.price)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
               <a href={`tel:${BUSINESS.phoneIntl}`} className="num mt-3 inline-block font-bold text-leaf-700 underline">
-                Call {BUSINESS.phone}
+                Call {BUSINESS.phone} to book
               </a>
             </aside>
           </div>

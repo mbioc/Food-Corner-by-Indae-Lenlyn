@@ -30,7 +30,7 @@ The home kitchen behind Tabgas, cooking party food and whole lechon for Albuera 
 - Customers mostly find the business through the owner's Facebook profile (18K followers) and pinned menu post.
 - Orders are mainly **pre-orders for a specific event date and time**. Rush orders are accepted.
 - Fulfilment is by delivery through local riders ("Deliverthing"), with the fee set by zone and vehicle size, or by pick-up at the kitchen.
-- Payment is by InstaPay QR to Maya, GoTyme, BPI, PNB or MariBank. **GCash is not accepted.**
+- Payment is by bank transfer or InstaPay QR to MariBank or PNB (owner finalised these two, 2026-10-02). **GCash is not accepted.**
 - The business is BIR-registered and issues an Official Receipt (OR) or CR.
 - Customers use a mix of Bisaya (Cebuano/Leyte), Tagalog and English.
 
