@@ -421,14 +421,11 @@ function OrderRecap({ form, zones }: { form: CheckoutForm; zones: Zone[] }) {
 
 function Confirmation({ done }: { done: Done }) {
   const [copied, setCopied] = useState(false)
-  const copyAndOpen = async () => {
-    try {
-      await navigator.clipboard.writeText(done.text)
-      setCopied(true)
-    } catch {
-      setCopied(false)
-    }
+  const copyAndOpen = () => {
+    // Start the copy and open Messenger in the same tap: a tab opened after an await is blocked as a pop-up.
+    const copying = navigator.clipboard?.writeText(done.text)
     window.open(messengerUrl(), '_blank', 'noopener')
+    copying?.then(() => setCopied(true)).catch(() => setCopied(false))
   }
   return (
     <div>
