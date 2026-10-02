@@ -364,13 +364,13 @@ function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
           Open your bank or e-wallet app, paste the account number and send <span className="num font-semibold text-ink">{peso(amount)}</span>.
         </li>
       </ol>
-      <details className="mt-4 border-t border-ink/10 pt-3">
-        <summary className="cursor-pointer text-sm font-semibold text-leaf">Or pay by InstaPay QR</summary>
-        <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="mx-auto mt-3 w-full max-w-64 rounded-[10px]" loading="lazy" />
+      <div className="mt-4 border-t border-ink/10 pt-4">
+        <p className="text-center text-sm font-semibold">Or scan this InstaPay QR</p>
+        <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="mx-auto mt-3 w-full max-w-64 rounded-[10px]" />
         <a href={asset(pay.qr)} download={`food-corner-${pay.id}-qr.png`} className="mt-2 block text-center text-sm font-semibold text-leaf underline">
           Save QR to your phone
         </a>
-      </details>
+      </div>
     </div>
   )
 }
