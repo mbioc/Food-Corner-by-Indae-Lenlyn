@@ -22,7 +22,7 @@ const MESSAGES = {
 export const POST = route(async (request) => {
   const staff = await requireStaff(request)
   const body = await request.json().catch(() => ({}))
-  const { orderId, status, paymentStatus, deliveryFee, staffNote, note, notify = true } = body
+  const { orderId, status, paymentStatus, deliveryFee, staffNote, note, balancePaid, notify = true } = body
   if (!orderId) throw new HttpError(400, 'Missing order.')
   const [order] = await db.select('orders', `id=eq.${encodeURIComponent(orderId)}&select=*`)
   if (!order) throw new HttpError(404, 'Order not found.')
@@ -37,6 +37,7 @@ export const POST = route(async (request) => {
     patch.payment_status = paymentStatus
   }
   if (deliveryFee !== undefined) patch.delivery_fee = deliveryFee === null || deliveryFee === '' ? null : Math.max(0, Math.round(Number(deliveryFee)))
+  if (balancePaid !== undefined) patch.balance_paid_at = balancePaid ? new Date().toISOString() : null
   if (staffNote !== undefined) patch.staff_note = String(staffNote).slice(0, 1000)
   if (!Object.keys(patch).length) throw new HttpError(400, 'Nothing to update.')
 
@@ -46,6 +47,7 @@ export const POST = route(async (request) => {
   if (patch.status && patch.status !== order.status) changes.push(patch.status)
   if (patch.payment_status && patch.payment_status !== order.payment_status) changes.push(`payment_${patch.payment_status}`)
   if ('delivery_fee' in patch && patch.delivery_fee !== order.delivery_fee) changes.push('delivery_fee')
+  if ('balance_paid_at' in patch && !!patch.balance_paid_at !== !!order.balance_paid_at) changes.push(patch.balance_paid_at ? 'balance_paid' : 'balance_unpaid')
   for (const c of changes.length ? changes : note ? ['note'] : []) {
     await db.insert('order_events', {
       order_id: orderId,

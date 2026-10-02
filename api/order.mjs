@@ -67,7 +67,10 @@ export const POST = route(async (request) => {
   const subtotal = resolved.reduce((n, r) => n + r.total, 0)
   const PAY = { maribank: 'MariBank', pnb: 'PNB' }
   form.payChannel = PAY[form.payChannel] ?? form.payChannel
-  const amountPaid = form.down ? Math.round(subtotal * DOWNPAYMENT_RATE) : subtotal
+  const [settings] = await db.select('settings', 'id=eq.1&select=*').catch(() => [])
+  const rate = Number(settings?.downpayment_rate) || DOWNPAYMENT_RATE
+  form.down = form.down && (settings?.allow_downpayment ?? true)
+  const amountPaid = form.down ? Math.round(subtotal * rate) : subtotal
   const pickupOnly = resolved.some((r) => r.pickupOnly)
 
   const zone = menu.zones.find((z) => z.id === form.zone)

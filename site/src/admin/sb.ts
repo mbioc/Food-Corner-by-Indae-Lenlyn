@@ -64,6 +64,7 @@ export interface Order {
   delivery_fee: number | null
   amount_paid: number
   proof_path: string | null
+  balance_paid_at: string | null
   summary: string
   staff_note: string | null
   updated_at: string

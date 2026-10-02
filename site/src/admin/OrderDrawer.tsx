@@ -13,6 +13,8 @@ const EVENT_LABEL: Record<string, string> = {
   payment_rejected: 'Payment marked as a problem',
   payment_unverified: 'Payment set back to unchecked',
   delivery_fee: 'Delivery fee updated',
+  balance_paid: 'Balance received, fully paid',
+  balance_unpaid: 'Balance set back to unpaid',
   note: 'Note',
 }
 
@@ -186,11 +188,26 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
           {order.amount_paid < order.subtotal ? ' down payment' : ''} via {order.pay_channel ?? '—'}
           {order.reference ? ` · Ref ${order.reference}` : ''}
         </p>
-        {order.amount_paid < order.subtotal && (
-          <p className="mt-2 rounded-[12px] bg-sun/40 p-3 text-sm font-semibold">
-            Balance to collect on {pickup ? 'pick-up' : 'delivery'}: <span className="num">{peso(order.subtotal - order.amount_paid)}</span>
-          </p>
-        )}
+        {order.amount_paid < order.subtotal &&
+          (order.balance_paid_at ? (
+            <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[12px] bg-leaf/10 p-3 text-sm font-semibold text-leaf-700">
+              <span>
+                Balance of <span className="num">{peso(order.subtotal - order.amount_paid)}</span> received. Fully paid.
+              </span>
+              <button type="button" disabled={!!busy} onClick={() => update('bal', { balancePaid: false }, 'Balance set back to unpaid')} className="cursor-pointer font-semibold underline">
+                Undo
+              </button>
+            </p>
+          ) : (
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 rounded-[12px] bg-sun/40 p-3">
+              <p className="text-sm font-semibold">
+                Balance to collect on {pickup ? 'pick-up' : 'delivery'}: <span className="num">{peso(order.subtotal - order.amount_paid)}</span>
+              </p>
+              <Button variant="leaf" size="sm" disabled={!!busy} onClick={() => update('bal', { balancePaid: true }, 'Balance marked as received')}>
+                <Check size={16} weight="bold" /> Balance received
+              </Button>
+            </div>
+          ))}
         {order.proof_path ? (
           proofUrl ? (
             <a href={proofUrl} target="_blank" rel="noreferrer" className="mt-3 block w-fit">

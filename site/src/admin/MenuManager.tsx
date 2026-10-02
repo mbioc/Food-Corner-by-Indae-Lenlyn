@@ -12,13 +12,14 @@ import { Empty, Page, Toggle } from './ui'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 type Row = Record<string, any>
-type Tab = 'trays' | 'packages' | 'lechon' | 'zones'
+type Tab = 'trays' | 'packages' | 'lechon' | 'zones' | 'payment'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'trays', label: 'Dishes' },
   { id: 'packages', label: 'Packages' },
   { id: 'lechon', label: 'Lechon' },
   { id: 'zones', label: 'Delivery areas' },
+  { id: 'payment', label: 'Payment' },
 ]
 
 const slug = (s: string) =>
@@ -118,6 +119,7 @@ export function MenuManager() {
       {tab === 'packages' && <Packages />}
       {tab === 'lechon' && <Lechon />}
       {tab === 'zones' && <Zones />}
+      {tab === 'payment' && <PaymentSettings />}
     </Page>
   )
 }
@@ -550,6 +552,60 @@ function Zones() {
         )}
       </Sheet>
     </>
+  )
+}
+/* ---------- Payment ---------- */
+
+function PaymentSettings() {
+  const { toast } = useAdmin()
+  const [enabled, setEnabled] = useState(true)
+  const [percent, setPercent] = useState('50')
+  const [loading, setLoading] = useState(true)
+  const [busy, setBusy] = useState(false)
+
+  useEffect(() => {
+    supabase
+      .from('settings')
+      .select('*')
+      .eq('id', 1)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data) {
+          setEnabled(data.allow_downpayment)
+          setPercent(String(Math.round(Number(data.downpayment_rate) * 100)))
+        }
+        setLoading(false)
+      })
+  }, [])
+
+  const n = Number(percent)
+  const valid = Number.isFinite(n) && n >= 10 && n <= 90
+  const save = async () => {
+    setBusy(true)
+    const { error } = await supabase.from('settings').update({ allow_downpayment: enabled, downpayment_rate: n / 100 }).eq('id', 1)
+    setBusy(false)
+    toast(error ? error.message : 'Payment settings saved')
+  }
+
+  if (loading) return <div className="h-40 animate-pulse rounded-[20px] bg-ink/5" />
+  return (
+    <div className="grid max-w-xl gap-5 rounded-[20px] bg-white p-5 ring-1 ring-inset ring-ink/8">
+      <div>
+        <h2 className="display text-lg font-bold">Down payment</h2>
+        <p className="text-sm text-ink-soft">Let customers pay part of the food total now and the balance on pick-up or delivery.</p>
+      </div>
+      <label className="flex items-center gap-3 font-semibold">
+        <Toggle checked={enabled} label="Allow down payment" onChange={setEnabled} /> {enabled ? 'Customers can choose a down payment' : 'Full payment only'}
+      </label>
+      {enabled && (
+        <Field label="Down payment share (%)" htmlFor="dp-rate" error={valid ? undefined : 'Enter a number from 10 to 90.'} hint={valid ? `A ₱10,000 order would need ${peso(Math.round(10000 * (n / 100)))} now and ${peso(10000 - Math.round(10000 * (n / 100)))} later.` : undefined}>
+          <input id="dp-rate" type="number" inputMode="numeric" min={10} max={90} className={`num ${inputClass(!valid)} max-w-40`} value={percent} onChange={(e) => setPercent(e.target.value)} />
+        </Field>
+      )}
+      <Button className="w-fit" disabled={busy || (enabled && !valid)} onClick={save}>
+        {busy ? 'Saving…' : 'Save'}
+      </Button>
+    </div>
   )
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */

@@ -7,7 +7,7 @@ import { asset } from '../lib/asset'
 const STEPS = [
   { t: 'Fill your table', d: 'Pick a package, lechon or trays. Choose your dishes inside each package.' },
   { t: 'Set the date and place', d: 'Tell us when and where. Delivery or pick-up at the kitchen.' },
-  { t: 'Pay by bank transfer', d: 'Pay in full or a 50% down payment to MariBank or PNB, then upload the screenshot.' },
+  { t: 'Pay by bank transfer', d: 'Pay in full or a down payment to MariBank or PNB, then upload the screenshot.' },
   { t: 'Lenlyn confirms and cooks', d: 'She checks your order and the delivery fee, then cooks it fresh for your handaan.' },
 ]
 

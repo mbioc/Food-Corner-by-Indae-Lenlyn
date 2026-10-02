@@ -1,7 +1,7 @@
 import { ArrowLeft, Check, CheckCircle, CopySimple, ImageSquare, MessengerLogo, Phone, WarningCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useMemo, useRef, useState, type ChangeEvent } from 'react'
-import { BUSINESS, PAYMENTS, PICKUP_ID, SETTINGS, TUPPERWARE, type PayChannel } from '../data/business'
+import { BUSINESS, PAYMENTS, PICKUP_ID, TUPPERWARE, type PayChannel } from '../data/business'
 import { asset } from '../lib/asset'
 import { useMenu } from '../lib/menu'
 import {
@@ -35,7 +35,7 @@ interface Done {
 
 export function Checkout({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { lines, resolved, subtotal, hasPickupOnly, clear } = useOrder()
-  const { zones: ZONES, blocked } = useMenu()
+  const { zones: ZONES, blocked, downpayment: dp } = useMenu()
   const reduce = useReducedMotion()
   const [step, setStep] = useState(0)
   const [form, setForm] = useState<CheckoutForm>(EMPTY_FORM)
@@ -54,7 +54,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
 
   const zone = ZONES.find((z) => z.id === form.zone)
   const pay = PAYMENTS.find((p) => p.id === form.payChannel)
-  const due = amountDue(subtotal, form.payPlan)
+  const due = amountDue(subtotal, form.payPlan, dp)
 
   const close = () => {
     if (done) {
@@ -91,7 +91,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
       return
     }
     const id = res.orderId ?? orderId
-    setDone({ orderId: id, text: orderText(id, resolved, subtotal, form, ZONES), emailed: res.saved, error: res.error })
+    setDone({ orderId: id, text: orderText(id, resolved, subtotal, form, ZONES, dp), emailed: res.saved, error: res.error })
     clear()
   }
 
@@ -264,16 +264,16 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
             ) : (
               <div className="grid gap-6">
                 <OrderRecap form={form} zones={ZONES} />
-                {SETTINGS.allowDownpayment && (
+                {dp.enabled && (
                   <fieldset>
                     <legend className="text-sm font-semibold">How much will you pay now?</legend>
                     <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Payment amount">
                       {(['full', 'down'] as const).map((p) => {
                         const on = form.payPlan === p
-                        const amount = p === 'full' ? subtotal : Math.round(subtotal * SETTINGS.downpaymentRate)
+                        const amount = p === 'full' ? subtotal : Math.round(subtotal * dp.rate)
                         return (
                           <button key={p} type="button" role="radio" aria-checked={on} onClick={() => set('payPlan', p)} className={`cursor-pointer rounded-[14px] px-3 py-3 text-left transition-colors ${on ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/10 hover:ring-leaf/50'}`}>
-                            <span className="block text-sm font-semibold">{p === 'full' ? 'Full payment' : `${SETTINGS.downpaymentRate * 100}% down payment`}</span>
+                            <span className="block text-sm font-semibold">{p === 'full' ? 'Full payment' : `${Math.round(dp.rate * 100)}% down payment`}</span>
                             <span className={`num display block text-xl font-extrabold ${on ? 'text-sun' : 'text-leaf'}`}>{peso(amount)}</span>
                           </button>
                         )

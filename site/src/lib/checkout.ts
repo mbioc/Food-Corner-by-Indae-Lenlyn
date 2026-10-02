@@ -74,8 +74,13 @@ export function todayISO() {
   return d.toISOString().slice(0, 10)
 }
 
-export function amountDue(subtotal: number, plan: CheckoutForm['payPlan']) {
-  return plan === 'down' && SETTINGS.allowDownpayment ? Math.round(subtotal * SETTINGS.downpaymentRate) : subtotal
+export interface Downpayment {
+  enabled: boolean
+  rate: number
+}
+
+export function amountDue(subtotal: number, plan: CheckoutForm['payPlan'], dp: Downpayment) {
+  return plan === 'down' && dp.enabled ? Math.round(subtotal * dp.rate) : subtotal
 }
 
 export function formatDate(iso: string) {
@@ -92,7 +97,7 @@ export function formatTime(t: string) {
 }
 
 /** Plain-text order used for Messenger, email and the owner's records. */
-export function orderText(orderId: string, lines: ResolvedLine[], subtotal: number, f: CheckoutForm, zones: Zone[]) {
+export function orderText(orderId: string, lines: ResolvedLine[], subtotal: number, f: CheckoutForm, zones: Zone[], dp: Downpayment) {
   const zone = zones.find((z) => z.id === f.zone)
   const pay = PAYMENTS.find((p) => p.id === f.payChannel)
   const out: string[] = []
@@ -105,7 +110,7 @@ export function orderText(orderId: string, lines: ResolvedLine[], subtotal: numb
   out.push('')
   out.push(`Food total: ${peso(subtotal)}`)
   if (zone) out.push(`${zone.id === PICKUP_ID ? 'Pick-up' : `Delivery (${zone.label})`}: ${feeLabel(zone.id, zones)}${zone.id !== PICKUP_ID ? ' (to be confirmed)' : ''}`)
-  const paid = amountDue(subtotal, f.payPlan)
+  const paid = amountDue(subtotal, f.payPlan, dp)
   if (pay) out.push(`Paid ${peso(paid)}${paid < subtotal ? ' (down payment)' : ''} via ${pay.bank}${f.reference ? ` · Ref ${f.reference}` : ''}`)
   if (paid < subtotal) out.push(`Balance: ${peso(subtotal - paid)}, due on pick-up or delivery`)
   out.push('')

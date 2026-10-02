@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { LECHON_BELLY, LECHON_INYUHA, PACKAGES, TRAYS, WHOLE_LECHON, type LechonOption, type Package, type Tray, type TrayCategory } from '../data/menu'
-import { ZONES, type Zone } from '../data/business'
+import { SETTINGS, ZONES, type Zone } from '../data/business'
 import { asset } from './asset'
 
 export interface Menu {
@@ -11,11 +11,12 @@ export interface Menu {
   inyuha: LechonOption[] // roasting fee when the customer brings the pig
   zones: Zone[]
   blocked: string[] // YYYY-MM-DD days Lenlyn is fully booked
+  downpayment: { enabled: boolean; rate: number }
   live: boolean // true once loaded from the database
 }
 
 /** The menu that shipped with the site: shown instantly, and used if the database can't be reached. */
-const STATIC_MENU: Menu = { trays: TRAYS, packages: PACKAGES, whole: WHOLE_LECHON, belly: LECHON_BELLY, inyuha: LECHON_INYUHA, zones: ZONES, blocked: [], live: false }
+const STATIC_MENU: Menu = { trays: TRAYS, packages: PACKAGES, whole: WHOLE_LECHON, belly: LECHON_BELLY, inyuha: LECHON_INYUHA, zones: ZONES, blocked: [], downpayment: { enabled: SETTINGS.allowDownpayment, rate: SETTINGS.downpaymentRate }, live: false }
 
 const SB_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const SB_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
@@ -32,12 +33,13 @@ async function rest<T>(path: string): Promise<T> {
 /* eslint-disable @typescript-eslint/no-explicit-any */
 export async function fetchMenu(): Promise<Menu> {
   const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10)
-  const [trays, lechon, packages, zones, blocked] = await Promise.all([
+  const [trays, lechon, packages, zones, blocked, settings] = await Promise.all([
     rest<any[]>('trays?select=*&available=eq.true&order=sort'),
     rest<any[]>('lechon_options?select=*&available=eq.true&order=sort'),
     rest<any[]>('packages?select=*&available=eq.true&order=sort'),
     rest<any[]>('zones?select=*&active=eq.true&order=sort'),
     rest<any[]>(`blocked_dates?select=day&day=gte.${today}`),
+    rest<any[]>('settings?select=*&id=eq.1').catch(() => []),
   ])
   const opt = (o: any) => ({ ...o, img: imgUrl(o.img) })
   return {
@@ -61,6 +63,7 @@ export async function fetchMenu(): Promise<Menu> {
     })),
     zones: zones.map((z) => ({ id: z.id, label: z.label, detail: z.detail, feeMin: z.fee_min, feeMax: z.fee_max, quote: z.quote })),
     blocked: blocked.map((b) => b.day),
+    downpayment: settings[0] ? { enabled: settings[0].allow_downpayment, rate: Number(settings[0].downpayment_rate) } : { enabled: SETTINGS.allowDownpayment, rate: SETTINGS.downpaymentRate },
     live: true,
   }
 }
