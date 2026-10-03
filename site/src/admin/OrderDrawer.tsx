@@ -185,8 +185,7 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
         <h3 className="display text-lg font-bold">Payment</h3>
         <p className="mt-1 text-ink-soft">
           <span className="num font-semibold text-ink">{peso(order.amount_paid)}</span>
-          {order.amount_paid < order.subtotal ? ' down payment' : ''}
-          {order.pay_channel ? ` via ${order.pay_channel}` : order.proof_path ? '' : ' to collect'}
+          {order.amount_paid < order.subtotal ? ' down payment' : ''} via {order.pay_channel ?? '—'}
           {order.reference ? ` · Ref ${order.reference}` : ''}
         </p>
         {order.amount_paid < order.subtotal &&
@@ -219,7 +218,7 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
             <div className="mt-3 h-48 w-40 animate-pulse rounded-[14px] bg-ink/6" />
           )
         ) : (
-          <p className="mt-2 text-sm text-ink-soft">No payment sent on the website. Message the customer your QR code or account number, then tap Payment received when the money arrives.</p>
+          <p className="mt-2 text-sm text-ink-soft">No screenshot uploaded.</p>
         )}
         <div className="mt-3 flex flex-wrap gap-2">
           <Button variant="leaf" size="sm" disabled={!!busy || order.payment_status === 'verified'} onClick={() => update('pv', { paymentStatus: 'verified' }, 'Payment verified')}>

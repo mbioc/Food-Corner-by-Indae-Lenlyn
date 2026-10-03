@@ -78,15 +78,15 @@ export const POST = route(async (request) => {
   if (pickupOnly && zone.id !== PICKUP_ID) throw new HttpError(400, 'Your order has a pick-up-only package.')
   if (zone.id !== PICKUP_ID && !form.address) throw new HttpError(400, 'We need the delivery address.')
 
-  // A payment screenshot is optional: Lenlyn now sends the payment details after the order arrives.
   const m = /^data:(image\/(?:jpeg|png|webp));base64,(.+)$/.exec(data?.proof?.dataUrl ?? '')
-  const bytes = m ? Buffer.from(m[2], 'base64') : null
-  if (bytes && bytes.length > MAX_PROOF_BYTES) throw new HttpError(413, 'Payment screenshot is too large.')
+  if (!m) throw new HttpError(400, 'Upload the screenshot of your payment.')
+  const bytes = Buffer.from(m[2], 'base64')
+  if (bytes.length > MAX_PROOF_BYTES) throw new HttpError(413, 'Payment screenshot is too large.')
 
   const orderId = await db.rpc('next_order_id')
-  const ext = m ? m[1].split('/')[1].replace('jpeg', 'jpg') : null
-  const proofPath = m ? `${form.eventDate.slice(0, 7)}/${orderId}.${ext}` : null
-  if (m) await storage.upload('payment-proofs', proofPath, bytes, m[1])
+  const ext = m[1].split('/')[1].replace('jpeg', 'jpg')
+  const proofPath = `${form.eventDate.slice(0, 7)}/${orderId}.${ext}`
+  await storage.upload('payment-proofs', proofPath, bytes, m[1])
 
   const items = resolved.map((r) => ({ kind: r.line.kind, refId: r.line.refId, choices: r.line.choices, addOns: r.line.addOns, paluto: r.line.paluto, title: r.title, detail: r.detail, qty: r.line.qty, unitPrice: r.unitPrice, total: r.total }))
   const summary = [
@@ -96,9 +96,7 @@ export const POST = route(async (request) => {
     '',
     `Food total: ${peso(subtotal)}`,
     `${zone.id === PICKUP_ID ? 'Pick-up' : `Delivery (${zone.label})`}: ${zoneFeeLabel(zone)}${zone.id !== PICKUP_ID ? ' (to be confirmed)' : ''}`,
-    m
-      ? `Paid ${peso(amountPaid)}${form.down ? ' (down payment)' : ''} via ${form.payChannel || '—'}${form.reference ? ` · Ref ${form.reference}` : ''}`
-      : `To pay: ${peso(amountPaid)}${form.down ? ' (down payment)' : ''}. Payment details to be sent by Lenlyn.`,
+    `Paid ${peso(amountPaid)}${form.down ? ' (down payment)' : ''} via ${form.payChannel || '—'}${form.reference ? ` · Ref ${form.reference}` : ''}`,
     ...(form.down ? [`Balance: ${peso(subtotal - amountPaid)}, due on pick-up or delivery`] : []),
     '',
     `When: ${fmtDate(form.eventDate)}, ${fmtTime(form.eventTime)}${form.occasion ? ` · ${form.occasion}` : ''}${form.pax ? ` · ${form.pax} pax` : ''}`,
@@ -149,16 +147,16 @@ export const POST = route(async (request) => {
       to: owners.map((email) => ({ email })),
       replyTo: form.email ? { email: form.email, name: form.name } : undefined,
       subject: `New order ${orderId} · ${form.name} · ${form.eventDate}`,
-      html: page(`New order ${orderId}`, `From <b>${esc(form.name)}</b> · <a href="tel:${esc(form.mobile)}">${esc(form.mobile)}</a>. ${m ? 'Payment screenshot attached.' : 'No payment yet: send them your QR code or account number.'} Open the admin panel to confirm the order.`, summary),
+      html: page(`New order ${orderId}`, `From <b>${esc(form.name)}</b> · <a href="tel:${esc(form.mobile)}">${esc(form.mobile)}</a>. Payment screenshot attached. Open the admin panel to confirm it.`, summary),
       text: summary,
-      attachment: m ? [{ name: `${orderId}-payment.${ext}`, content: m[2] }] : undefined,
+      attachment: [{ name: `${orderId}-payment.${ext}`, content: m[2] }],
     })
   }
   if (form.email) {
     await sendEmail({
       to: [{ email: form.email, name: form.name }],
       subject: `We got your order ${orderId} · Food Corner`,
-      html: page(`Salamat, ${form.name}!`, `We received your order <b>${esc(orderId)}</b>. Lenlyn will message you the payment details (QR code or account number) and confirm once it's paid.`, summary),
+      html: page(`Salamat, ${form.name}!`, `We received your order <b>${esc(orderId)}</b>. Lenlyn will check your payment and email you once it's confirmed.`, summary),
       text: summary,
     })
   }
