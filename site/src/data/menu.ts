@@ -252,23 +252,25 @@ export const PACKAGES: Package[] = [
   },
   {
     id: 'tray-six',
-    code: 'TRAY-7',
+    code: 'TRAY-9',
     name: 'Food Tray Package',
     price: 6000,
     paxMin: 20,
     paxMax: 25,
-    summary: 'Seven large trays with Bicol Express, afritada and curry.',
+    summary: 'Nine large trays, ready as is, with Bicol Express, afritada and curry.',
+    // All nine trays are included; the owner confirmed there are no dish choices in this package.
     fixed: [
+      { name: 'Buffalo Chicken', img: d('chicken-buffalo') },
+      { name: 'Fried Chicken', img: d('fried-chicken') },
+      { name: 'Special Bam-i', img: d('special-bami') },
+      { name: 'Creamy Spaghetti', img: d('creamy-spaghetti') },
       { name: 'Chicken Afritada', img: d('chicken-afritada') },
       { name: 'Pork Steak', img: d('pork-steak') },
       { name: 'Lumpia (100 pcs)', img: d('pork-lumpia') },
       { name: 'Bicol Express', img: d('pork-humba') },
       { name: 'Chicken Curry', img: d('chicken-curry') },
     ],
-    groups: [
-      { id: 'chicken', label: 'Chicken', choose: 1, options: [opt('chicken-buffalo', 'Buffalo Chicken'), opt('fried-chicken', 'Fried Chicken')] },
-      { id: 'noodle', label: 'Noodles', choose: 1, options: [opt('bami', 'Special Bam-i'), opt('creamy-spaghetti', 'Creamy Spaghetti')] },
-    ],
+    groups: [],
     freebies: ['Maja'],
   },
   {
