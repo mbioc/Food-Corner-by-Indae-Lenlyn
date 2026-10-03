@@ -134,6 +134,7 @@ const FIVE_OF_EIGHT = [
   opt('pork-steak', 'Pork Steak'),
   opt('special-bami', 'Special Bam-i'),
   opt('chicken-afritada', 'Chicken Afritada'),
+  opt('chopsuey', 'Chopsuey'),
 ]
 
 export const PACKAGES: Package[] = [
@@ -198,7 +199,7 @@ export const PACKAGES: Package[] = [
     price: 3500,
     paxMin: 20,
     paxMax: 25,
-    summary: 'Pick any five large trays from nine favourites.',
+    summary: 'Pick any five large trays from ten favourites.',
     fixed: [],
     groups: [{ id: 'dishes', label: 'Your 5 trays', choose: 5, options: FIVE_OF_EIGHT }],
     freebies: ['Maja'],
@@ -248,7 +249,7 @@ export const PACKAGES: Package[] = [
     groups: [
       { id: 'noodle', label: 'Noodles', choose: 1, options: [opt('bami', 'Bam-i'), opt('spaghetti', 'Spaghetti')] },
       { id: 'pork', label: 'Pork', choose: 1, options: [opt('pork-humba', 'Humba'), opt('pork-steak', 'Pork Steak')] },
-      { id: 'chicken', label: 'Chicken', choose: 1, options: [opt('fried-chicken', 'Fried Chicken'), opt('chicken-buffalo', 'Chicken Buffalo'), opt('chicken-afritada', 'Chicken Afritada')] },
+      { id: 'chicken', label: 'Chicken or Chopsuey', choose: 1, options: [opt('fried-chicken', 'Fried Chicken'), opt('chicken-buffalo', 'Chicken Buffalo'), opt('chicken-afritada', 'Chicken Afritada'), opt('chopsuey', 'Chopsuey')] },
     ],
     freebies: ['Maja'],
   },
