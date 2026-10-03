@@ -1,10 +1,12 @@
-import { MagnifyingGlass, Truck, Storefront } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, Truck, Storefront } from '@phosphor-icons/react'
 import { useMemo, useState } from 'react'
 import { useAdmin } from './data'
 import { ACTIVE, fmtDate, fmtTime, peso, timeAgo } from './meta'
 import { OrderDrawer } from './OrderDrawer'
 import type { Order, OrderStatus } from './sb'
 import { Empty, Page, PayPill, StatusPill } from './ui'
+import { WalkInSheet } from './WalkIn'
+import { Button } from '../components/ui'
 
 type Tab = 'active' | OrderStatus | 'all'
 
@@ -20,7 +22,8 @@ const TABS: { id: Tab; label: string; match: (o: Order) => boolean }[] = [
 ]
 
 export function Orders() {
-  const { orders, loading, error } = useAdmin()
+  const { orders, loading, error, reload } = useAdmin()
+  const [walkIn, setWalkIn] = useState(false)
   const [tab, setTab] = useState<Tab>('active')
   const [q, setQ] = useState('')
   const [openId, setOpenId] = useState<string | null>(null)
@@ -42,11 +45,16 @@ export function Orders() {
     <Page
       title="Orders"
       actions={
+        <>
+        <Button variant="leaf" size="sm" className="!h-11" onClick={() => setWalkIn(true)}>
+          <Plus size={16} weight="bold" /> Add walk-in order
+        </Button>
         <label className="relative">
           <span className="sr-only">Search orders</span>
           <MagnifyingGlass size={18} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-ink-soft" />
           <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Name, mobile, order no." className="h-11 w-64 max-w-[70vw] rounded-[12px] border-2 border-ink/10 bg-white pl-9 pr-3 focus:border-leaf focus:outline-none" />
         </label>
+        </>
       }
     >
       <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Order status">
@@ -105,6 +113,7 @@ export function Orders() {
                   <p className="num font-bold md:text-right">{peso(o.subtotal)}</p>
                   <div className="col-span-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:justify-end">
                     <StatusPill status={o.status} />
+                    {o.source === 'walk-in' && <span className="inline-flex h-6 items-center whitespace-nowrap rounded-full bg-ink/8 px-2.5 text-xs font-bold">Walk-in</span>}
                     {o.status !== 'cancelled' && <PayPill status={o.payment_status} />}
                     {o.amount_paid < o.subtotal && !o.balance_paid_at && o.status !== 'cancelled' && <span className="inline-flex h-6 items-center whitespace-nowrap rounded-full bg-ink/8 px-2.5 text-xs font-bold">Balance {peso(o.subtotal - o.amount_paid)}</span>}
                     <span className="text-xs text-ink-soft md:hidden">· {timeAgo(o.created_at)}</span>
@@ -116,6 +125,14 @@ export function Orders() {
         </ul>
       )}
       <OrderDrawer order={open} onClose={() => setOpenId(null)} />
+      <WalkInSheet
+        open={walkIn}
+        onClose={() => setWalkIn(false)}
+        onSaved={(o) => {
+          void reload()
+          setOpenId(o.id)
+        }}
+      />
     </Page>
   )
 }

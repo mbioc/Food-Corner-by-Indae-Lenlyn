@@ -65,6 +65,7 @@ export interface Order {
   amount_paid: number
   proof_path: string | null
   balance_paid_at: string | null
+  source: 'website' | 'walk-in'
   summary: string
   staff_note: string | null
   updated_at: string

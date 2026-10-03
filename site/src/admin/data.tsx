@@ -44,7 +44,8 @@ export function AdminData({ me, children }: { me: Profile; children: ReactNode }
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'orders' }, (p) => {
         const o = p.new as Order
         setOrders((list) => (list.some((x) => x.id === o.id) ? list : [o, ...list]))
-        toast(`New order ${o.id} from ${o.customer_name}`)
+        // Walk-in orders are added by staff here, so they don't need a new-order alert.
+        if (o.source !== 'walk-in') toast(`New order ${o.id} from ${o.customer_name}`)
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders' }, (p) => {
         const o = p.new as Order

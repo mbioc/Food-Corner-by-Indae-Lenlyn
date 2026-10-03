@@ -99,6 +99,7 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
       <div className="flex flex-wrap items-center gap-2">
         <StatusPill status={order.status} />
         <PayPill status={order.payment_status} />
+        {order.source === 'walk-in' && <span className="inline-flex h-6 items-center rounded-full bg-ink/8 px-2.5 text-xs font-bold">Walk-in</span>}
         <span className="text-sm text-ink-soft">Placed {new Date(order.created_at).toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
       </div>
 
@@ -119,17 +120,21 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
         <h3 className="display text-lg font-bold">Customer</h3>
         <p className="mt-1 font-semibold">{order.customer_name}</p>
         <p className="num text-ink-soft">
-          {order.mobile}
+          {order.mobile || 'No mobile number'}
           {order.email ? ` · ${order.email}` : ''}
           {order.fb_name ? ` · FB: ${order.fb_name}` : ''}
         </p>
         <div className="mt-3 flex flex-wrap gap-2">
-          <a href={`tel:${order.mobile}`} className="inline-flex h-10 items-center gap-1.5 rounded-[10px] bg-leaf px-3 text-sm font-semibold text-white">
-            <Phone size={16} weight="bold" /> Call
-          </a>
-          <a href={`sms:${order.mobile}`} className="inline-flex h-10 items-center gap-1.5 rounded-[10px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700">
-            <ChatText size={16} weight="bold" /> Text
-          </a>
+          {order.mobile && (
+            <>
+              <a href={`tel:${order.mobile}`} className="inline-flex h-10 items-center gap-1.5 rounded-[10px] bg-leaf px-3 text-sm font-semibold text-white">
+                <Phone size={16} weight="bold" /> Call
+              </a>
+              <a href={`sms:${order.mobile}`} className="inline-flex h-10 items-center gap-1.5 rounded-[10px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700">
+                <ChatText size={16} weight="bold" /> Text
+              </a>
+            </>
+          )}
           {order.fb_name && (
             <a href={`https://www.facebook.com/search/people/?q=${encodeURIComponent(order.fb_name)}`} target="_blank" rel="noreferrer" className="inline-flex h-10 items-center gap-1.5 rounded-[10px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700">
               <MessengerLogo size={16} weight="bold" /> Find on Facebook
