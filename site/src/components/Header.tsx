@@ -1,7 +1,9 @@
 import { MessengerLogo, Phone } from '@phosphor-icons/react'
 import { BUSINESS } from '../data/business'
 import { messengerUrl } from '../lib/checkout'
+import { useCallback, useState } from 'react'
 import { asset } from '../lib/asset'
+import { MenuSearch } from './MenuSearch'
 
 const NAV = [
   { href: '#packages', label: 'Packages' },
@@ -11,6 +13,8 @@ const NAV = [
 ]
 
 export function Header() {
+  const [searching, setSearching] = useState(false)
+  const closeSearch = useCallback(() => setSearching(false), [])
   return (
     <header className="sticky top-0 z-30 border-b border-ink/8 bg-ground/85 backdrop-blur-md backdrop-saturate-150">
       <div className="mx-auto flex h-[72px] max-w-7xl items-center gap-3 px-4 md:px-8">
@@ -28,7 +32,8 @@ export function Header() {
             </a>
           ))}
         </nav>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <MenuSearch open={searching} onOpen={() => setSearching(true)} onClose={closeSearch} />
           <a href={`tel:${BUSINESS.phoneIntl}`} className="hidden h-11 items-center gap-2 rounded-[12px] px-3 text-[15px] font-semibold text-leaf transition-colors hover:bg-leaf/8 sm:inline-flex">
             <Phone size={18} weight="bold" />
             <span className="num">{BUSINESS.phone}</span>
