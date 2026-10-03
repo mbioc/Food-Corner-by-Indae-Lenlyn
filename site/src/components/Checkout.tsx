@@ -1,6 +1,7 @@
-import { ArrowLeft, Check, CheckCircle, CopySimple, DownloadSimple, ImageSquare, MessengerLogo, Phone, ShareNetwork, WarningCircle } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowsOut, Check, CheckCircle, CopySimple, DownloadSimple, ImageSquare, MessengerLogo, Phone, ShareNetwork, WarningCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { createPortal } from 'react-dom'
 import { BUSINESS, PAYMENTS, PICKUP_ID, TUPPERWARE, type PayChannel } from '../data/business'
 import { asset } from '../lib/asset'
 import { useMenu } from '../lib/menu'
@@ -350,6 +351,11 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   )
 }
 
+// Facebook, Messenger and Instagram open links in their own built-in browser.
+const IN_APP_BROWSER = typeof navigator !== 'undefined' && /FBAN|FBAV|FB_IAB|Messenger|Instagram/i.test(navigator.userAgent)
+
+const qrButton = 'inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700 transition-colors hover:bg-leaf/15'
+
 function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
   const [copied, setCopied] = useState(false)
   const copy = async () => {
@@ -377,6 +383,18 @@ function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
       alive = false
     }
   }, [pay.id, pay.qr])
+  const [big, setBig] = useState(false)
+  useEffect(() => {
+    if (!big) return
+    // Escape closes only the QR, not the whole checkout underneath.
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return
+      e.stopImmediatePropagation()
+      setBig(false)
+    }
+    window.addEventListener('keydown', onKey, true)
+    return () => window.removeEventListener('keydown', onKey, true)
+  }, [big])
   const shareQr = () => {
     if (!qrFile) return
     navigator.share({ files: [qrFile], title: `${pay.bank} QR, Food Corner` }).catch(() => {
@@ -399,36 +417,58 @@ function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
       </ol>
       <div className="mt-4 border-t border-ink/10 pt-4">
         <p className="text-center text-sm font-semibold">Or pay with this InstaPay QR</p>
-        <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="mx-auto mt-3 w-full max-w-64 rounded-[10px]" />
-        <div className={`mt-3 grid gap-2 ${qrFile ? 'grid-cols-2' : ''}`}>
-          <a
-            href={asset(pay.qr)}
-            download={`food-corner-${pay.id}-qr.png`}
-            className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700 transition-colors hover:bg-leaf/15"
-          >
-            <DownloadSimple size={18} weight="bold" /> Save QR
-          </a>
-          {qrFile && (
-            <button
-              type="button"
-              onClick={shareQr}
-              className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700 transition-colors hover:bg-leaf/15"
-            >
-              <ShareNetwork size={18} weight="bold" /> Share to app
-            </button>
+        <button type="button" onClick={() => setBig(true)} aria-label="Show the QR code full screen" className="mx-auto mt-3 block w-full max-w-64 cursor-pointer">
+          <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="w-full rounded-[10px]" />
+        </button>
+        <div className="mt-3 grid gap-2">
+          <button type="button" onClick={() => setBig(true)} className={qrButton}>
+            <ArrowsOut size={18} weight="bold" /> Show QR full screen
+          </button>
+          {/* Facebook and Messenger's built-in browser cannot download files, so Save and Share are left out there. */}
+          {!IN_APP_BROWSER && (
+            <div className={`grid gap-2 ${qrFile ? 'grid-cols-2' : ''}`}>
+              <a href={asset(pay.qr)} download={`food-corner-${pay.id}-qr.png`} className={qrButton}>
+                <DownloadSimple size={18} weight="bold" /> Save QR
+              </a>
+              {qrFile && (
+                <button type="button" onClick={shareQr} className={qrButton}>
+                  <ShareNetwork size={18} weight="bold" /> Share to app
+                </button>
+              )}
+            </div>
           )}
         </div>
         <p className="mt-3 text-sm font-semibold">Paying from this same phone?</p>
         <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm text-ink-soft">
-          <li>Tap <b className="text-ink">Save QR</b>.</li>
+          <li>
+            Tap <b className="text-ink">Show QR full screen</b> and take a <b className="text-ink">screenshot</b>.
+          </li>
           <li>
             Open your bank or e-wallet app and tap <b className="text-ink">Scan QR</b> or <b className="text-ink">Pay QR</b>.
           </li>
           <li>
-            Tap <b className="text-ink">Upload</b> or the <b className="text-ink">gallery</b> icon and choose the saved QR, then send <span className="num font-semibold text-ink">{peso(amount)}</span>.
+            Tap <b className="text-ink">Upload</b> or the <b className="text-ink">gallery</b> icon and choose the screenshot, then send <span className="num font-semibold text-ink">{peso(amount)}</span>.
           </li>
         </ol>
       </div>
+      {big &&
+        createPortal(
+          <div role="dialog" aria-modal="true" aria-label={`${pay.bank} QR code, full screen`} className="fixed inset-0 z-[90] flex flex-col items-center justify-center overflow-y-auto bg-white px-5 py-6 text-center text-ink">
+            <p className="display text-2xl font-extrabold">Take a screenshot now</p>
+            <p className="mt-1 text-sm text-ink-soft">Then open your bank app, tap Scan QR and upload this screenshot.</p>
+            <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="mt-4 w-full max-w-[340px]" />
+            <p className="mt-3 font-semibold">
+              {pay.bank} · {pay.accountName}
+            </p>
+            <p className="text-sm text-ink-soft">
+              Amount to send: <span className="num font-bold text-ink">{peso(amount)}</span>
+            </p>
+            <Button className="mt-5 w-full max-w-[340px]" size="lg" onClick={() => setBig(false)} autoFocus>
+              Done, back to my order
+            </Button>
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }
