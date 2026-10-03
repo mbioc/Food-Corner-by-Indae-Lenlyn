@@ -22,6 +22,7 @@ import {
 } from '../lib/checkout'
 import { feeLabel, makeOrderId, peso, useOrder } from '../lib/order'
 import type { Zone } from '../data/business'
+import { DateField, TimeField } from './DateTimeFields'
 import { Sheet } from './Sheet'
 import { Button, Field, inputClass } from './ui'
 
@@ -172,12 +173,12 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
               </div>
             ) : step === 1 ? (
               <div className="grid gap-5">
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid gap-5 sm:grid-cols-2 sm:gap-3">
                   <Field label="Date needed" htmlFor="co-eventDate" error={errors.eventDate}>
-                    <input id="co-eventDate" type="date" min={todayISO()} className={inputClass(!!errors.eventDate)} value={form.eventDate} onChange={(e) => set('eventDate', e.target.value)} aria-invalid={!!errors.eventDate} />
+                    <DateField id="co-eventDate" min={todayISO()} value={form.eventDate} invalid={!!errors.eventDate} onChange={(v) => set('eventDate', v)} />
                   </Field>
                   <Field label="Time" htmlFor="co-eventTime" error={errors.eventTime}>
-                    <input id="co-eventTime" type="time" className={inputClass(!!errors.eventTime)} value={form.eventTime} onChange={(e) => set('eventTime', e.target.value)} aria-invalid={!!errors.eventTime} />
+                    <TimeField id="co-eventTime" value={form.eventTime} invalid={!!errors.eventTime} onChange={(v) => set('eventTime', v)} />
                   </Field>
                 </div>
                 {form.eventDate === todayISO() && (
