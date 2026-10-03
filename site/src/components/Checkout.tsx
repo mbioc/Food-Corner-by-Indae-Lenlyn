@@ -95,6 +95,8 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
     const id = res.orderId ?? orderId
     setDone({ orderId: id, text: orderText(id, resolved, subtotal, form, ZONES, dp), emailed: res.saved, error: res.error })
     clear()
+    // The payment step is scrolled down; bring the order number back into view.
+    bodyRef.current?.closest('.overflow-y-auto')?.scrollTo({ top: 0 })
   }
 
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
