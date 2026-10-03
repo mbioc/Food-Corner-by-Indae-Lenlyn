@@ -1,6 +1,6 @@
-import { ArrowLeft, Check, CheckCircle, CopySimple, ImageSquare, MessengerLogo, Phone, WarningCircle } from '@phosphor-icons/react'
+import { ArrowLeft, Check, CheckCircle, CopySimple, DownloadSimple, ImageSquare, MessengerLogo, Phone, ShareNetwork, WarningCircle } from '@phosphor-icons/react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { useMemo, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { BUSINESS, PAYMENTS, PICKUP_ID, TUPPERWARE, type PayChannel } from '../data/business'
 import { asset } from '../lib/asset'
 import { useMenu } from '../lib/menu'
@@ -360,6 +360,29 @@ function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
       setCopied(false)
     }
   }
+  // Load the QR as a file up front so the share sheet can open in the same tap.
+  const [qrFile, setQrFile] = useState<File | null>(null)
+  useEffect(() => {
+    let alive = true
+    setQrFile(null)
+    fetch(asset(pay.qr))
+      .then((r) => r.blob())
+      .then((blob) => {
+        const file = new File([blob], `food-corner-${pay.id}-qr.png`, { type: 'image/png' })
+        // Only offer sharing where the phone can share image files.
+        if (alive && navigator.canShare?.({ files: [file] })) setQrFile(file)
+      })
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [pay.id, pay.qr])
+  const shareQr = () => {
+    if (!qrFile) return
+    navigator.share({ files: [qrFile], title: `${pay.bank} QR, Food Corner` }).catch(() => {
+      /* the customer closed the share sheet */
+    })
+  }
   return (
     <div className="rounded-[18px] bg-white p-4 ring-1 ring-inset ring-ink/10">
       <p className="display text-lg font-bold">{pay.bank}</p>
@@ -375,11 +398,36 @@ function PayCard({ pay, amount }: { pay: PayChannel; amount: number }) {
         </li>
       </ol>
       <div className="mt-4 border-t border-ink/10 pt-4">
-        <p className="text-center text-sm font-semibold">Or scan this InstaPay QR</p>
+        <p className="text-center text-sm font-semibold">Or pay with this InstaPay QR</p>
         <img src={asset(pay.qr)} alt={`${pay.bank} InstaPay QR code for ${pay.accountName}`} className="mx-auto mt-3 w-full max-w-64 rounded-[10px]" />
-        <a href={asset(pay.qr)} download={`food-corner-${pay.id}-qr.png`} className="mt-2 block text-center text-sm font-semibold text-leaf underline">
-          Save QR to your phone
-        </a>
+        <div className={`mt-3 grid gap-2 ${qrFile ? 'grid-cols-2' : ''}`}>
+          <a
+            href={asset(pay.qr)}
+            download={`food-corner-${pay.id}-qr.png`}
+            className="inline-flex h-12 items-center justify-center gap-2 rounded-[14px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700 transition-colors hover:bg-leaf/15"
+          >
+            <DownloadSimple size={18} weight="bold" /> Save QR
+          </a>
+          {qrFile && (
+            <button
+              type="button"
+              onClick={shareQr}
+              className="inline-flex h-12 cursor-pointer items-center justify-center gap-2 rounded-[14px] bg-leaf/10 px-3 text-sm font-semibold text-leaf-700 transition-colors hover:bg-leaf/15"
+            >
+              <ShareNetwork size={18} weight="bold" /> Share to app
+            </button>
+          )}
+        </div>
+        <p className="mt-3 text-sm font-semibold">Paying from this same phone?</p>
+        <ol className="mt-1 list-decimal space-y-1 pl-5 text-sm text-ink-soft">
+          <li>Tap <b className="text-ink">Save QR</b>.</li>
+          <li>
+            Open your bank or e-wallet app and tap <b className="text-ink">Scan QR</b> or <b className="text-ink">Pay QR</b>.
+          </li>
+          <li>
+            Tap <b className="text-ink">Upload</b> or the <b className="text-ink">gallery</b> icon and choose the saved QR, then send <span className="num font-semibold text-ink">{peso(amount)}</span>.
+          </li>
+        </ol>
       </div>
     </div>
   )
