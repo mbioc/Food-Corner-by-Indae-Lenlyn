@@ -68,7 +68,13 @@ export function Inventory() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const cats = useMemo(() => ['All', ...CATEGORIES.filter((c) => items.some((i) => i.category === c)), ...(items.some(isLow) ? ['Low stock'] : [])], [items])
+  // Built-in categories plus any custom ones already used on an item, with Other kept last.
+  const allCats = useMemo(() => {
+    const custom = [...new Set(items.map((i) => i.category))].filter((c) => !CATEGORIES.includes(c)).sort((a, b) => a.localeCompare(b))
+    return [...CATEGORIES.filter((c) => c !== 'Other'), ...custom, 'Other']
+  }, [items])
+  const [newCat, setNewCat] = useState(false)
+  const cats = useMemo(() => ['All', ...allCats.filter((c) => items.some((i) => i.category === c)), ...(items.some(isLow) ? ['Low stock'] : [])], [items, allCats])
   const list = useMemo(() => {
     const needle = q.trim().toLowerCase()
     return items.filter((i) => (cat === 'All' || (cat === 'Low stock' ? isLow(i) : i.category === cat)) && (!needle || i.name.toLowerCase().includes(needle)))
@@ -80,6 +86,7 @@ export function Inventory() {
 
   const openEdit = (i: Item) => {
     setError('')
+    setNewCat(false)
     setDraft({ id: i.id, name: i.name, category: i.category, unit: i.unit, quantity: String(i.quantity), low_level: i.low_level === null ? '' : String(i.low_level), cost: i.cost === null ? '' : String(i.cost), note: i.note ?? '' })
     setMoves([])
     supabase
@@ -94,11 +101,14 @@ export function Inventory() {
   const saveItem = async () => {
     if (!draft) return
     if (!draft.name.trim()) return setError('Enter the item name.')
+    const category = draft.category.trim().replace(/\s+/g, ' ').slice(0, 40)
+    if (!category) return setError('Type a name for the new category.')
     setBusy(true)
     setError('')
     const fields = {
       name: draft.name.trim(),
-      category: draft.category,
+      // Reuse an existing category when she types the same name in different capitals.
+      category: allCats.find((c) => c.toLowerCase() === category.toLowerCase()) ?? category,
       unit: draft.unit,
       low_level: draft.low_level === '' ? null : Math.max(0, Number(draft.low_level) || 0),
       cost: draft.cost === '' ? null : Math.max(0, Number(draft.cost) || 0),
@@ -165,6 +175,8 @@ export function Inventory() {
     setAdjust(null)
   }
 
+  // The form has one error at a time; show it under the category box when that is what's missing.
+  const catError = !!error && newCat && !!draft?.name.trim() && !draft?.category.trim()
   const after = adjust && Number(amount) > 0 ? adjust.item.quantity + Number(amount) * adjust.dir : null
 
   return (
@@ -172,7 +184,7 @@ export function Inventory() {
       title="Stock"
       actions={
         <>
-          <Button variant="leaf" size="sm" className="!h-11" onClick={() => (setError(''), setMoves([]), setDraft({ name: '', category: CATEGORIES[0], unit: UNITS[0], quantity: '', low_level: '', cost: '', note: '' }))}>
+          <Button variant="leaf" size="sm" className="!h-11" onClick={() => (setError(''), setNewCat(false), setMoves([]), setDraft({ name: '', category: CATEGORIES[0], unit: UNITS[0], quantity: '', low_level: '', cost: '', note: '' }))}>
             <Plus size={16} weight="bold" /> Add item
           </Button>
           <label className="relative">
@@ -320,15 +332,26 @@ export function Inventory() {
       >
         {draft && (
           <div className="grid gap-4">
-            <Field label="Item name" htmlFor="inv-name" error={error || undefined}>
-              <input id="inv-name" data-autofocus className={inputClass(!!error)} placeholder="Pork belly, cooking oil, charcoal…" value={draft.name} onChange={(e) => (setDraft({ ...draft, name: e.target.value }), setError(''))} />
+            <Field label="Item name" htmlFor="inv-name" error={catError ? undefined : error || undefined}>
+              <input id="inv-name" data-autofocus className={inputClass(!!error && !catError)} placeholder="Pork belly, cooking oil, charcoal…" value={draft.name} onChange={(e) => (setDraft({ ...draft, name: e.target.value }), setError(''))} />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Category" htmlFor="inv-cat">
-                <select id="inv-cat" className={inputClass()} value={draft.category} onChange={(e) => setDraft({ ...draft, category: e.target.value })}>
-                  {CATEGORIES.map((c) => (
+                <select
+                  id="inv-cat"
+                  className={inputClass()}
+                  value={newCat ? '__new' : draft.category}
+                  onChange={(e) => {
+                    const add = e.target.value === '__new'
+                    setNewCat(add)
+                    setDraft({ ...draft, category: add ? '' : e.target.value })
+                    setError('')
+                  }}
+                >
+                  {allCats.map((c) => (
                     <option key={c}>{c}</option>
                   ))}
+                  <option value="__new">+ Add new category…</option>
                 </select>
               </Field>
               <Field label="Unit" htmlFor="inv-unit">
@@ -339,6 +362,11 @@ export function Inventory() {
                 </select>
               </Field>
             </div>
+            {newCat && (
+              <Field label="New category name" htmlFor="inv-newcat" error={catError ? error : undefined} hint="It joins the list once this item is saved.">
+                <input id="inv-newcat" autoFocus maxLength={40} className={inputClass(catError)} placeholder="Dairy, Drinks, Cleaning supplies…" value={draft.category} onChange={(e) => (setDraft({ ...draft, category: e.target.value }), setError(''))} />
+              </Field>
+            )}
             <div className="grid grid-cols-2 gap-3">
               {draft.id ? (
                 <Field label="In stock" htmlFor="inv-qty" hint="Change it with the + and − buttons on the list.">
