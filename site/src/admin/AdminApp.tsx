@@ -1,4 +1,4 @@
-import { CalendarDots, ChartBar, ForkKnife, Receipt, SignOut, UserCircle, UsersThree, type Icon } from '@phosphor-icons/react'
+import { CalendarDots, ChartBar, ForkKnife, Package, Receipt, SignOut, UserCircle, UsersThree, type Icon } from '@phosphor-icons/react'
 import type { Session } from '@supabase/supabase-js'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useState, type FormEvent } from 'react'
@@ -8,17 +8,19 @@ import { Account } from './Account'
 import { Analytics } from './Analytics'
 import { CalendarView } from './Calendar'
 import { AdminData, useAdmin } from './data'
+import { Inventory } from './Inventory'
 import { MenuManager } from './MenuManager'
 import { Orders } from './Orders'
 import { supabase, type Profile } from './sb'
 import { Team } from './Team'
 
-type Section = 'orders' | 'calendar' | 'analytics' | 'menu' | 'team' | 'account'
+type Section = 'orders' | 'calendar' | 'analytics' | 'stock' | 'menu' | 'team' | 'account'
 
 const NAV: { id: Section; label: string; icon: Icon; owner?: boolean }[] = [
   { id: 'orders', label: 'Orders', icon: Receipt },
   { id: 'calendar', label: 'Calendar', icon: CalendarDots },
   { id: 'analytics', label: 'Sales', icon: ChartBar },
+  { id: 'stock', label: 'Stock', icon: Package },
   { id: 'menu', label: 'Menu', icon: ForkKnife, owner: true },
   { id: 'team', label: 'Team', icon: UsersThree, owner: true },
   { id: 'account', label: 'Account', icon: UserCircle },
@@ -141,6 +143,7 @@ function Shell() {
         {current === 'orders' && <Orders />}
         {current === 'calendar' && <CalendarView />}
         {current === 'analytics' && <Analytics />}
+        {current === 'stock' && <Inventory />}
         {current === 'menu' && <MenuManager />}
         {current === 'team' && <Team />}
         {current === 'account' && <Account />}
