@@ -123,6 +123,7 @@ export interface Package {
 
 const opt = (id: string, name: string, img?: string) => ({ id, name, img: img ?? trayById(id)?.img ?? PACKAGE_ONLY_IMG[id] })
 
+// The dishes a customer picks five from (Choice Your Food and the Lechon Package).
 const FIVE_OF_EIGHT = [
   opt('spaghetti', 'Spaghetti'),
   opt('pork-lumpia', 'Lumpia (100 pcs)'),
@@ -132,6 +133,7 @@ const FIVE_OF_EIGHT = [
   opt('pork-humba', 'Pork Humba'),
   opt('pork-steak', 'Pork Steak'),
   opt('special-bami', 'Special Bam-i'),
+  opt('chicken-afritada', 'Chicken Afritada'),
 ]
 
 export const PACKAGES: Package[] = [
@@ -196,7 +198,7 @@ export const PACKAGES: Package[] = [
     price: 3500,
     paxMin: 20,
     paxMax: 25,
-    summary: 'Pick any five large trays from eight favourites.',
+    summary: 'Pick any five large trays from nine favourites.',
     fixed: [],
     groups: [{ id: 'dishes', label: 'Your 5 trays', choose: 5, options: FIVE_OF_EIGHT }],
     freebies: ['Maja'],
@@ -246,7 +248,7 @@ export const PACKAGES: Package[] = [
     groups: [
       { id: 'noodle', label: 'Noodles', choose: 1, options: [opt('bami', 'Bam-i'), opt('spaghetti', 'Spaghetti')] },
       { id: 'pork', label: 'Pork', choose: 1, options: [opt('pork-humba', 'Humba'), opt('pork-steak', 'Pork Steak')] },
-      { id: 'chicken', label: 'Chicken', choose: 1, options: [opt('fried-chicken', 'Fried Chicken'), opt('chicken-buffalo', 'Chicken Buffalo')] },
+      { id: 'chicken', label: 'Chicken', choose: 1, options: [opt('fried-chicken', 'Fried Chicken'), opt('chicken-buffalo', 'Chicken Buffalo'), opt('chicken-afritada', 'Chicken Afritada')] },
     ],
     freebies: ['Maja'],
   },
