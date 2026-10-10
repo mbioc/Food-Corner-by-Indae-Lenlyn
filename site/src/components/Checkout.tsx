@@ -166,11 +166,11 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                 <Field label="Mobile number" htmlFor="co-mobile" error={errors.mobile} hint="Lenlyn will text or call this number to confirm.">
                   <input id="co-mobile" type="tel" inputMode="tel" className={`num ${inputClass(!!errors.mobile)}`} autoComplete="tel" placeholder="0917 123 4567" value={form.mobile} onChange={(e) => set('mobile', e.target.value)} aria-invalid={!!errors.mobile} />
                 </Field>
-                <Field label="Email" htmlFor="co-email" error={errors.email} optional hint="We'll email you a copy of your order.">
+                <Field label="Email" htmlFor="co-email" error={errors.email} hint="We'll email you a copy of your order.">
                   <input id="co-email" type="email" inputMode="email" className={inputClass(!!errors.email)} autoComplete="email" value={form.email} onChange={(e) => set('email', e.target.value)} aria-invalid={!!errors.email} />
                 </Field>
-                <Field label="Facebook name" htmlFor="co-fbName" optional hint="So Lenlyn can find your message on Messenger.">
-                  <input id="co-fbName" className={inputClass()} value={form.fbName} onChange={(e) => set('fbName', e.target.value)} />
+                <Field label="Facebook name" htmlFor="co-fbName" error={errors.fbName} hint="So Lenlyn can find your message on Messenger.">
+                  <input id="co-fbName" className={inputClass(!!errors.fbName)} value={form.fbName} onChange={(e) => set('fbName', e.target.value)} aria-invalid={!!errors.fbName} />
                 </Field>
               </div>
             ) : step === 1 ? (
