@@ -21,8 +21,10 @@ export const POST = route(async (request) => {
   const data = await request.json().catch(() => ({}))
   const f = data?.form ?? {}
   const form = {
-    name: clean(f.name, 120) || 'Walk-in customer',
+    name: clean(f.name, 120),
     mobile: clean(f.mobile, 20).replace(/[\s-]/g, ''),
+    email: clean(f.email, 160),
+    fbName: clean(f.fbName, 120),
     eventDate: clean(f.eventDate, 10),
     eventTime: clean(f.eventTime, 5),
     zone: clean(f.zone, 40) || PICKUP_ID,
@@ -30,6 +32,10 @@ export const POST = route(async (request) => {
     notes: clean(f.notes, 600),
     payMethod: PAY_METHODS.includes(f.payMethod) ? f.payMethod : 'Cash',
   }
+  if (!form.name) throw new HttpError(400, "Enter the customer's name.")
+  if (!/^(\+?63|0)9\d{9}$/.test(form.mobile)) throw new HttpError(400, 'Enter a valid PH mobile number.')
+  if (!/^\S+@\S+\.\S+$/.test(form.email)) throw new HttpError(400, "Enter the customer's email.")
+  if (!form.fbName) throw new HttpError(400, "Enter the customer's Facebook name.")
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.eventDate) || !/^\d{2}:\d{2}$/.test(form.eventTime)) throw new HttpError(400, 'Pick the date and time the food is needed.')
 
   // Staff may add items the website hides (sold out online) but not ones that were deleted.
@@ -69,7 +75,9 @@ export const POST = route(async (request) => {
     '',
     `When: ${fmtDate(form.eventDate)}, ${fmtTime(form.eventTime)}`,
     `Name: ${form.name}`,
-    ...(form.mobile ? [`Mobile: ${form.mobile}`] : []),
+    `Mobile: ${form.mobile}`,
+    `Email: ${form.email}`,
+    `Facebook: ${form.fbName}`,
     ...(pickup ? [] : [`Address: ${form.address}`]),
     ...(form.notes ? [`Notes: ${form.notes}`] : []),
   ].join('\n')
@@ -81,6 +89,8 @@ export const POST = route(async (request) => {
     payment_status: amountPaid > 0 ? 'verified' : 'unverified',
     customer_name: form.name,
     mobile: form.mobile,
+    email: form.email,
+    fb_name: form.fbName,
     event_date: form.eventDate,
     event_time: form.eventTime,
     zone_id: zone.id,

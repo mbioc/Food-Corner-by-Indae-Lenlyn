@@ -30,6 +30,8 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
   const [choices, setChoices] = useState<Record<string, string[]>>({})
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
+  const [email, setEmail] = useState('')
+  const [fbName, setFbName] = useState('')
   const [eventDate, setEventDate] = useState(manilaToday())
   const [eventTime, setEventTime] = useState(nowRounded)
   const [zone, setZone] = useState(PICKUP_ID)
@@ -50,6 +52,8 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
     setChoices({})
     setName('')
     setMobile('')
+    setEmail('')
+    setFbName('')
     setEventDate(manilaToday())
     setEventTime(nowRounded())
     setZone(PICKUP_ID)
@@ -109,12 +113,16 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
   const save = async () => {
     setError('')
     if (!lines.length) return setError('Add at least one item.')
+    if (!name.trim()) return setError("Enter the customer's name.")
+    if (!/^(\+?63|0)9\d{9}$/.test(mobile.replace(/[\s-]/g, ''))) return setError('Enter a PH mobile number, like 0917 123 4567.')
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter the customer's email.")
+    if (!fbName.trim()) return setError("Enter the customer's Facebook name.")
     if (!eventDate || !eventTime) return setError('Pick the date and time the food is needed.')
     if (zone !== PICKUP_ID && !address.trim()) return setError('Enter the delivery address.')
     setBusy(true)
     try {
       const r = await adminApi<{ order: Order }>('walk-in', {
-        body: { lines, form: { name, mobile, eventDate, eventTime, zone, address, notes, payMethod }, deliveryFee, amountPaid: paidNumber },
+        body: { lines, form: { name, mobile, email, fbName, eventDate, eventTime, zone, address, notes, payMethod }, deliveryFee, amountPaid: paidNumber },
       })
       toast(`Walk-in order ${r.order.id} saved`)
       onSaved(r.order)
@@ -280,11 +288,17 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
           <section className="grid gap-4">
             <h3 className="display text-lg font-bold">Customer</h3>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="Name" htmlFor="wi-name" optional>
-                <input id="wi-name" className={inputClass()} placeholder="Walk-in customer" value={name} onChange={(e) => setName(e.target.value)} />
+              <Field label="Name" htmlFor="wi-name">
+                <input id="wi-name" className={inputClass()} value={name} onChange={(e) => setName(e.target.value)} />
               </Field>
-              <Field label="Mobile number" htmlFor="wi-mobile" optional>
-                <input id="wi-mobile" type="tel" inputMode="tel" className={`num ${inputClass()}`} value={mobile} onChange={(e) => setMobile(e.target.value)} />
+              <Field label="Mobile number" htmlFor="wi-mobile">
+                <input id="wi-mobile" type="tel" inputMode="tel" className={`num ${inputClass()}`} placeholder="0917 123 4567" value={mobile} onChange={(e) => setMobile(e.target.value)} />
+              </Field>
+              <Field label="Email" htmlFor="wi-email">
+                <input id="wi-email" type="email" inputMode="email" className={inputClass()} value={email} onChange={(e) => setEmail(e.target.value)} />
+              </Field>
+              <Field label="Facebook name" htmlFor="wi-fb">
+                <input id="wi-fb" className={inputClass()} value={fbName} onChange={(e) => setFbName(e.target.value)} />
               </Field>
             </div>
           </section>
