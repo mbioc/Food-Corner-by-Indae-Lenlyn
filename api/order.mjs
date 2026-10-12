@@ -1,7 +1,7 @@
 // POST /api/order: a customer places an order from the website.
 // Prices are recomputed from the database, never trusted from the browser.
 
-import { choiceError, DOWNPAYMENT_RATE, PICKUP_ID, peso, resolveLine, zoneFeeLabel } from '../site/src/shared/pricing.js'
+import { choiceError, DOWNPAYMENT_MIN, PICKUP_ID, peso, resolveLine, zoneFeeLabel } from '../site/src/shared/pricing.js'
 import { esc, page, sendEmail } from '../server/email.mjs'
 import { loadMenu } from '../server/menu.mjs'
 import { db, HttpError, route, storage } from '../server/supabase.mjs'
@@ -41,6 +41,7 @@ export const POST = route(async (request) => {
     notes: clean(f.notes, 600),
     tupperware: f.tupperware === true,
     down: f.payPlan === 'down',
+    downAmount: Math.round(Number(f.downAmount) || 0),
     payChannel: clean(f.payChannel, 40),
     reference: clean(f.reference, 80),
   }
@@ -69,9 +70,12 @@ export const POST = route(async (request) => {
   const PAY = { maribank: 'MariBank', pnb: 'PNB' }
   form.payChannel = PAY[form.payChannel] ?? form.payChannel
   const [settings] = await db.select('settings', 'id=eq.1&select=*').catch(() => [])
-  const rate = Number(settings?.downpayment_rate) || DOWNPAYMENT_RATE
-  form.down = form.down && (settings?.allow_downpayment ?? true)
-  const amountPaid = form.down ? Math.round(subtotal * rate) : subtotal
+  const minDown = Number(settings?.downpayment_min) || DOWNPAYMENT_MIN
+  form.down = form.down && (settings?.allow_downpayment ?? true) && subtotal > minDown
+  if (form.down && form.downAmount < minDown) throw new HttpError(400, `The down payment must be at least ${peso(minDown)}.`)
+  // Paying the whole total (or more) is simply a full payment.
+  if (form.down && form.downAmount >= subtotal) form.down = false
+  const amountPaid = form.down ? form.downAmount : subtotal
   const pickupOnly = resolved.some((r) => r.pickupOnly)
 
   const zone = menu.zones.find((z) => z.id === form.zone)

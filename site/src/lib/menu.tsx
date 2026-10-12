@@ -11,12 +11,12 @@ export interface Menu {
   inyuha: LechonOption[] // roasting fee when the customer brings the pig
   zones: Zone[]
   blocked: string[] // YYYY-MM-DD days Lenlyn is fully booked
-  downpayment: { enabled: boolean; rate: number }
+  downpayment: { enabled: boolean; min: number }
   live: boolean // true once loaded from the database
 }
 
 /** The menu that shipped with the site: shown instantly, and used if the database can't be reached. */
-const STATIC_MENU: Menu = { trays: TRAYS, packages: PACKAGES, whole: WHOLE_LECHON, belly: LECHON_BELLY, inyuha: LECHON_INYUHA, zones: ZONES, blocked: [], downpayment: { enabled: SETTINGS.allowDownpayment, rate: SETTINGS.downpaymentRate }, live: false }
+const STATIC_MENU: Menu = { trays: TRAYS, packages: PACKAGES, whole: WHOLE_LECHON, belly: LECHON_BELLY, inyuha: LECHON_INYUHA, zones: ZONES, blocked: [], downpayment: { enabled: SETTINGS.allowDownpayment, min: SETTINGS.downpaymentMin }, live: false }
 
 const SB_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined
 const SB_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
@@ -63,7 +63,7 @@ export async function fetchMenu(): Promise<Menu> {
     })),
     zones: zones.map((z) => ({ id: z.id, label: z.label, detail: z.detail, feeMin: z.fee_min, feeMax: z.fee_max, quote: z.quote })),
     blocked: blocked.map((b) => b.day),
-    downpayment: settings[0] ? { enabled: settings[0].allow_downpayment, rate: Number(settings[0].downpayment_rate) } : { enabled: SETTINGS.allowDownpayment, rate: SETTINGS.downpaymentRate },
+    downpayment: settings[0] ? { enabled: settings[0].allow_downpayment, min: Number(settings[0].downpayment_min) || SETTINGS.downpaymentMin } : { enabled: SETTINGS.allowDownpayment, min: SETTINGS.downpaymentMin },
     live: true,
   }
 }

@@ -610,7 +610,7 @@ function NotifySettings() {
 function PaymentSettings() {
   const { toast } = useAdmin()
   const [enabled, setEnabled] = useState(true)
-  const [percent, setPercent] = useState('50')
+  const [min, setMin] = useState('500')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
 
@@ -623,17 +623,17 @@ function PaymentSettings() {
       .then(({ data }) => {
         if (data) {
           setEnabled(data.allow_downpayment)
-          setPercent(String(Math.round(Number(data.downpayment_rate) * 100)))
+          setMin(String(data.downpayment_min ?? 500))
         }
         setLoading(false)
       })
   }, [])
 
-  const n = Number(percent)
-  const valid = Number.isFinite(n) && n >= 10 && n <= 90
+  const n = Math.round(Number(min))
+  const valid = Number.isFinite(n) && n >= 1
   const save = async () => {
     setBusy(true)
-    const { error } = await supabase.from('settings').update({ allow_downpayment: enabled, downpayment_rate: n / 100 }).eq('id', 1)
+    const { error } = await supabase.from('settings').update({ allow_downpayment: enabled, downpayment_min: n }).eq('id', 1)
     setBusy(false)
     toast(error ? error.message : 'Payment settings saved')
   }
@@ -643,14 +643,14 @@ function PaymentSettings() {
     <div className="grid max-w-xl gap-5 rounded-[20px] bg-white p-5 ring-1 ring-inset ring-ink/8">
       <div>
         <h2 className="display text-lg font-bold">Down payment</h2>
-        <p className="text-sm text-ink-soft">Let customers pay part of the food total now and the balance on pick-up or delivery.</p>
+        <p className="text-sm text-ink-soft">Let customers pay any amount now, from the minimum below, and the balance on pick-up or delivery.</p>
       </div>
       <label className="flex items-center gap-3 font-semibold">
         <Toggle checked={enabled} label="Allow down payment" onChange={setEnabled} /> {enabled ? 'Customers can choose a down payment' : 'Full payment only'}
       </label>
       {enabled && (
-        <Field label="Down payment share (%)" htmlFor="dp-rate" error={valid ? undefined : 'Enter a number from 10 to 90.'} hint={valid ? `A ₱10,000 order would need ${peso(Math.round(10000 * (n / 100)))} now and ${peso(10000 - Math.round(10000 * (n / 100)))} later.` : undefined}>
-          <input id="dp-rate" type="number" inputMode="numeric" min={10} max={90} className={`num ${inputClass(!valid)} max-w-40`} value={percent} onChange={(e) => setPercent(e.target.value)} />
+        <Field label="Smallest down payment (₱)" htmlFor="dp-min" error={valid ? undefined : 'Enter an amount of ₱1 or more.'} hint={valid ? `Customers can pay any amount from ${peso(n)} up to the total. Orders of ${peso(n)} or less are full payment only.` : undefined}>
+          <input id="dp-min" type="number" inputMode="numeric" min={1} step={1} className={`num ${inputClass(!valid)} max-w-40`} value={min} onChange={(e) => setMin(e.target.value)} />
         </Field>
       )}
       <Button className="w-fit" disabled={busy || (enabled && !valid)} onClick={save}>

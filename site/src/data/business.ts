@@ -1,4 +1,4 @@
-import { DOWNPAYMENT_RATE } from '../shared/pricing.js'
+import { DOWNPAYMENT_MIN } from '../shared/pricing.js'
 
 // Business facts and settings. Values marked TODO still need the owner's confirmation.
 
@@ -67,7 +67,7 @@ export const TUPPERWARE = { fee: 150, per: 5 }
 export const SETTINGS = {
   // Customers may pay a down payment now and the balance on pick-up or delivery.
   allowDownpayment: true,
-  downpaymentRate: DOWNPAYMENT_RATE,
+  downpaymentMin: DOWNPAYMENT_MIN,
   // Vercel function that saves the order and emails the owner and the customer (see /api/order.mjs).
   orderEndpoint: '/api/order',
 }

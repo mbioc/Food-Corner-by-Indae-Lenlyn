@@ -17,6 +17,7 @@ export interface CheckoutForm {
   tupperware: boolean
   payChannel: string
   payPlan: 'full' | 'down'
+  downAmount: string // pesos the customer chooses to pay now when payPlan is 'down'
   reference: string
 }
 
@@ -36,6 +37,7 @@ export const EMPTY_FORM: CheckoutForm = {
   tupperware: false,
   payChannel: '',
   payPlan: 'full',
+  downAmount: '',
   reference: '',
 }
 
@@ -45,7 +47,7 @@ export type Errors = Partial<Record<keyof CheckoutForm | 'proof', string>>
 
 const PH_MOBILE = /^(\+?63|0)9\d{9}$/
 
-export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, pickupOnly: boolean, blocked: string[] = []): Errors {
+export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, pickupOnly: boolean, blocked: string[] = [], subtotal = 0, dp?: Downpayment): Errors {
   const e: Errors = {}
   if (step === 0) {
     if (!f.name.trim()) e.name = 'Please enter your name.'
@@ -63,6 +65,11 @@ export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, p
     if (f.zone && f.zone !== PICKUP_ID && !f.address.trim()) e.address = 'We need the delivery address.'
   }
   if (step === 2) {
+    if (f.payPlan === 'down' && dp && canPayDown(subtotal, dp)) {
+      const n = Number(f.downAmount)
+      if (!Number.isFinite(n) || n < dp.min) e.downAmount = `The down payment must be at least ${peso(dp.min)}.`
+      else if (n >= subtotal) e.downAmount = `Enter less than the total of ${peso(subtotal)}, or choose Full payment.`
+    }
     if (!f.payChannel) e.payChannel = 'Choose where you sent the payment.'
     if (!hasProof) e.proof = 'Upload the screenshot of your payment.'
   }
@@ -77,11 +84,17 @@ export function todayISO() {
 
 export interface Downpayment {
   enabled: boolean
-  rate: number
+  min: number
 }
 
-export function amountDue(subtotal: number, plan: CheckoutForm['payPlan'], dp: Downpayment) {
-  return plan === 'down' && dp.enabled ? Math.round(subtotal * dp.rate) : subtotal
+/** A down payment only makes sense when the order is bigger than the minimum. */
+export const canPayDown = (subtotal: number, dp: Downpayment) => dp.enabled && subtotal > dp.min
+
+export function amountDue(subtotal: number, f: Pick<CheckoutForm, 'payPlan' | 'downAmount'>, dp: Downpayment) {
+  if (f.payPlan !== 'down' || !canPayDown(subtotal, dp)) return subtotal
+  const n = Math.round(Number(f.downAmount) || 0)
+  // While the customer is still typing, show at least the minimum and never more than the total.
+  return Math.max(dp.min, Math.min(subtotal, n))
 }
 
 export function formatDate(iso: string) {
@@ -111,7 +124,7 @@ export function orderText(orderId: string, lines: ResolvedLine[], subtotal: numb
   out.push('')
   out.push(`Food total: ${peso(subtotal)}`)
   if (zone) out.push(`${zone.id === PICKUP_ID ? 'Pick-up' : `Delivery (${zone.label})`}: ${feeLabel(zone.id, zones)}${zone.id !== PICKUP_ID ? ' (to be confirmed)' : ''}`)
-  const paid = amountDue(subtotal, f.payPlan, dp)
+  const paid = amountDue(subtotal, f, dp)
   if (pay) out.push(`Paid ${peso(paid)}${paid < subtotal ? ' (down payment)' : ''} via ${pay.bank}${f.reference ? ` · Ref ${f.reference}` : ''}`)
   if (paid < subtotal) out.push(`Balance: ${peso(subtotal - paid)}, due on pick-up or delivery`)
   out.push('')

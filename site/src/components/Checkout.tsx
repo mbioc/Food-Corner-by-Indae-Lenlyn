@@ -9,6 +9,7 @@ import {
   EMPTY_FORM,
   OCCASIONS,
   amountDue,
+  canPayDown,
   compressImage,
   formatDate,
   formatTime,
@@ -56,7 +57,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
 
   const zone = ZONES.find((z) => z.id === form.zone)
   const pay = PAYMENTS.find((p) => p.id === form.payChannel)
-  const due = amountDue(subtotal, form.payPlan, dp)
+  const due = amountDue(subtotal, form, dp)
 
   const close = () => {
     if (done) {
@@ -69,7 +70,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   }
 
   const next = () => {
-    const e = validateStep(step, form, !!proof, hasPickupOnly, blocked)
+    const e = validateStep(step, form, !!proof, hasPickupOnly, blocked, subtotal, dp)
     setErrors(e)
     if (Object.keys(e).length) {
       const first = Object.keys(e)[0]
@@ -268,25 +269,36 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
             ) : (
               <div className="grid gap-6">
                 <OrderRecap form={form} zones={ZONES} />
-                {dp.enabled && (
+                {canPayDown(subtotal, dp) && (
                   <fieldset>
                     <legend className="text-sm font-semibold">How much will you pay now?</legend>
                     <div className="mt-2 grid grid-cols-2 gap-2" role="radiogroup" aria-label="Payment amount">
                       {(['full', 'down'] as const).map((p) => {
                         const on = form.payPlan === p
-                        const amount = p === 'full' ? subtotal : Math.round(subtotal * dp.rate)
                         return (
-                          <button key={p} type="button" role="radio" aria-checked={on} onClick={() => set('payPlan', p)} className={`cursor-pointer rounded-[14px] px-3 py-3 text-left transition-colors ${on ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/10 hover:ring-leaf/50'}`}>
-                            <span className="block text-sm font-semibold">{p === 'full' ? 'Full payment' : `${Math.round(dp.rate * 100)}% down payment`}</span>
-                            <span className={`num display block text-xl font-extrabold ${on ? 'text-sun' : 'text-leaf'}`}>{peso(amount)}</span>
+                          <button
+                            key={p}
+                            type="button"
+                            role="radio"
+                            aria-checked={on}
+                            onClick={() => {
+                              set('payPlan', p)
+                              if (p === 'down' && !form.downAmount) set('downAmount', String(dp.min))
+                            }}
+                            className={`cursor-pointer rounded-[14px] px-3 py-3 text-left transition-colors ${on ? 'bg-leaf text-white' : 'bg-white ring-1 ring-inset ring-ink/10 hover:ring-leaf/50'}`}
+                          >
+                            <span className="block text-sm font-semibold">{p === 'full' ? 'Full payment' : 'Down payment'}</span>
+                            <span className={`num display block text-xl font-extrabold ${on ? 'text-sun' : 'text-leaf'}`}>{p === 'full' ? peso(subtotal) : `${peso(dp.min)} or more`}</span>
                           </button>
                         )
                       })}
                     </div>
                     {form.payPlan === 'down' && (
-                      <p className="mt-2 text-sm text-ink-soft">
-                        The balance of <span className="num font-semibold text-ink">{peso(subtotal - due)}</span> is paid on pick-up or delivery.
-                      </p>
+                      <div className="mt-3">
+                        <Field label="Down payment amount (₱)" htmlFor="co-downAmount" error={errors.downAmount} hint={`Any amount from ${peso(dp.min)}. The balance of ${peso(subtotal - due)} is paid on pick-up or delivery.`}>
+                          <input id="co-downAmount" type="number" inputMode="numeric" min={dp.min} max={subtotal - 1} step={1} className={`num ${inputClass(!!errors.downAmount)}`} value={form.downAmount} onChange={(e) => set('downAmount', e.target.value)} aria-invalid={!!errors.downAmount} />
+                        </Field>
+                      </div>
                     )}
                   </fieldset>
                 )}
