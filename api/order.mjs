@@ -45,7 +45,7 @@ export const POST = route(async (request) => {
     reference: clean(f.reference, 80),
   }
   if (!form.name || !PH_MOBILE.test(form.mobile)) throw new HttpError(400, 'Name and a valid PH mobile number are required.')
-  if (!/^\S+@\S+\.\S+$/.test(form.email)) throw new HttpError(400, 'Please enter a valid email.')
+  if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) throw new HttpError(400, 'That email looks incomplete.')
   if (!form.fbName) throw new HttpError(400, 'Please enter your Facebook name.')
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.eventDate) || !/^\d{2}:\d{2}$/.test(form.eventTime)) throw new HttpError(400, 'Pick a date and time.')
   const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10) // Asia/Manila

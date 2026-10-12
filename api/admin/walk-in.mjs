@@ -34,7 +34,7 @@ export const POST = route(async (request) => {
   }
   if (!form.name) throw new HttpError(400, "Enter the customer's name.")
   if (!/^(\+?63|0)9\d{9}$/.test(form.mobile)) throw new HttpError(400, 'Enter a valid PH mobile number.')
-  if (!/^\S+@\S+\.\S+$/.test(form.email)) throw new HttpError(400, "Enter the customer's email.")
+  if (form.email && !/^\S+@\S+\.\S+$/.test(form.email)) throw new HttpError(400, 'That email looks incomplete.')
   if (!form.fbName) throw new HttpError(400, "Enter the customer's Facebook name.")
   if (!/^\d{4}-\d{2}-\d{2}$/.test(form.eventDate) || !/^\d{2}:\d{2}$/.test(form.eventTime)) throw new HttpError(400, 'Pick the date and time the food is needed.')
 
@@ -76,7 +76,7 @@ export const POST = route(async (request) => {
     `When: ${fmtDate(form.eventDate)}, ${fmtTime(form.eventTime)}`,
     `Name: ${form.name}`,
     `Mobile: ${form.mobile}`,
-    `Email: ${form.email}`,
+    ...(form.email ? [`Email: ${form.email}`] : []),
     `Facebook: ${form.fbName}`,
     ...(pickup ? [] : [`Address: ${form.address}`]),
     ...(form.notes ? [`Notes: ${form.notes}`] : []),
@@ -89,7 +89,7 @@ export const POST = route(async (request) => {
     payment_status: amountPaid > 0 ? 'verified' : 'unverified',
     customer_name: form.name,
     mobile: form.mobile,
-    email: form.email,
+    email: form.email || null,
     fb_name: form.fbName,
     event_date: form.eventDate,
     event_time: form.eventTime,

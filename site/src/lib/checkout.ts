@@ -50,8 +50,7 @@ export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, p
   if (step === 0) {
     if (!f.name.trim()) e.name = 'Please enter your name.'
     if (!PH_MOBILE.test(f.mobile.replace(/[\s-]/g, ''))) e.mobile = 'Enter a PH mobile number, like 0917 123 4567.'
-    if (!f.email.trim()) e.email = 'Please enter your email.'
-    else if (!/^\S+@\S+\.\S+$/.test(f.email.trim())) e.email = 'That email looks incomplete.'
+    if (f.email.trim() && !/^\S+@\S+\.\S+$/.test(f.email.trim())) e.email = 'That email looks incomplete.'
     if (!f.fbName.trim()) e.fbName = 'Please enter your Facebook name.'
   }
   if (step === 1) {

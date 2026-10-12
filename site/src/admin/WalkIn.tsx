@@ -115,7 +115,7 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
     if (!lines.length) return setError('Add at least one item.')
     if (!name.trim()) return setError("Enter the customer's name.")
     if (!/^(\+?63|0)9\d{9}$/.test(mobile.replace(/[\s-]/g, ''))) return setError('Enter a PH mobile number, like 0917 123 4567.')
-    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setError("Enter the customer's email.")
+    if (email.trim() && !/^\S+@\S+\.\S+$/.test(email.trim())) return setError('That email looks incomplete.')
     if (!fbName.trim()) return setError("Enter the customer's Facebook name.")
     if (!eventDate || !eventTime) return setError('Pick the date and time the food is needed.')
     if (zone !== PICKUP_ID && !address.trim()) return setError('Enter the delivery address.')
@@ -294,7 +294,7 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
               <Field label="Mobile number" htmlFor="wi-mobile">
                 <input id="wi-mobile" type="tel" inputMode="tel" className={`num ${inputClass()}`} placeholder="0917 123 4567" value={mobile} onChange={(e) => setMobile(e.target.value)} />
               </Field>
-              <Field label="Email" htmlFor="wi-email">
+              <Field label="Email" htmlFor="wi-email" optional>
                 <input id="wi-email" type="email" inputMode="email" className={inputClass()} value={email} onChange={(e) => setEmail(e.target.value)} />
               </Field>
               <Field label="Facebook name" htmlFor="wi-fb">
