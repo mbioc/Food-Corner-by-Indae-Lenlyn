@@ -64,6 +64,9 @@ export const PAYMENTS: PayChannel[] = [
 // White tupperware containers instead of aluminum trays (the owner's packaging notice).
 export const TUPPERWARE = { fee: 150, per: 5 }
 
+// Customers can ask for food between these hours (24-hour clock, both ends included).
+export const ORDER_HOURS = { from: 8, to: 18 }
+
 export const SETTINGS = {
   // Customers may pay a down payment now and the balance on pick-up or delivery.
   allowDownpayment: true,

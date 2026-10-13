@@ -38,22 +38,42 @@ export function DateField({ id, value, min, invalid, onChange }: { id: string; v
 const HOURS = [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
 const MINUTES = ['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55']
 
-/** 12-hour time picker (hour, minute, AM/PM). The value stays in 24-hour "HH:MM" for the order. */
-export function TimeField({ id, value, invalid, onChange }: { id: string; value: string; invalid?: boolean; onChange: (hhmm: string) => void }) {
+const to24 = (h: string, p: string) => (Number(h) % 12) + (p === 'PM' ? 12 : 0)
+
+/**
+ * 12-hour time picker (hour, minute, AM/PM). The value stays in 24-hour "HH:MM" for the order.
+ * With `fromHour`/`toHour` (24-hour, inclusive, e.g. 8 and 18) only times in that window can be picked.
+ */
+export function TimeField({ id, value, invalid, onChange, fromHour, toHour }: { id: string; value: string; invalid?: boolean; onChange: (hhmm: string) => void; fromHour?: number; toHour?: number }) {
+  const limited = fromHour !== undefined && toHour !== undefined
+  const allowed = (h24: number) => !limited || (h24 >= fromHour && h24 <= toHour)
   const [h24, min] = value ? value.split(':') : []
   const [hour, setHour] = useState(value ? String(Number(h24) % 12 || 12) : '')
   // Times typed before this picker existed may not sit on a 5-minute step: keep them selectable.
   const [minute, setMinute] = useState(min ?? '00')
   const [period, setPeriod] = useState(value ? (Number(h24) < 12 ? 'AM' : 'PM') : '')
-  const minutes = MINUTES.includes(minute) ? MINUTES : [...MINUTES, minute].sort()
+
+  // Hours that have at least one allowed time, in clock order starting from the opening hour.
+  const hours = limited ? Array.from({ length: toHour - fromHour + 1 }, (_, i) => (fromHour + i) % 12 || 12).filter((h, i, all) => all.indexOf(h) === i) : HOURS
+  const periods = ['AM', 'PM'].filter((p) => !limited || HOURS.some((h) => allowed(to24(String(h), p))))
+  // The closing hour itself is the last slot: 6:00 PM, not 6:05 PM.
+  const atClose = limited && hour !== '' && period !== '' && to24(hour, period) === toHour
+  const base = atClose ? ['00'] : MINUTES
+  const minutes = base.includes(minute) || atClose ? base : [...base, minute].sort()
 
   const update = (h: string, m: string, p: string) => {
+    if (limited && h) {
+      // Inside the window each hour belongs to only one of AM or PM, so choose it for the customer.
+      const fits = ['AM', 'PM'].filter((x) => allowed(to24(h, x)))
+      if (fits.length === 1) p = fits[0]
+      else if (p && !allowed(to24(h, p))) p = ''
+      if (p && to24(h, p) === toHour) m = '00'
+    }
     setHour(h)
     setMinute(m)
     setPeriod(p)
     if (!h || !p) return onChange('')
-    const hh = (Number(h) % 12) + (p === 'PM' ? 12 : 0)
-    onChange(`${String(hh).padStart(2, '0')}:${m}`)
+    onChange(`${String(to24(h, p)).padStart(2, '0')}:${m}`)
   }
 
   const cls = `num ${inputClass(invalid)} !px-2 text-center`
@@ -61,7 +81,7 @@ export function TimeField({ id, value, invalid, onChange }: { id: string; value:
     <div className="grid grid-cols-3 gap-2" role="group" aria-label="Time">
       <select id={id} aria-label="Hour" aria-invalid={invalid} className={cls} value={hour} onChange={(e) => update(e.target.value, minute, period)}>
         <option value="">Hour</option>
-        {HOURS.map((h) => (
+        {hours.map((h) => (
           <option key={h} value={h}>
             {h}
           </option>
@@ -76,8 +96,11 @@ export function TimeField({ id, value, invalid, onChange }: { id: string; value:
       </select>
       <select aria-label="AM or PM" aria-invalid={invalid} className={cls} value={period} onChange={(e) => update(hour, minute, e.target.value)}>
         <option value="">AM/PM</option>
-        <option value="AM">AM</option>
-        <option value="PM">PM</option>
+        {periods.map((p) => (
+          <option key={p} value={p} disabled={limited && hour !== '' && !allowed(to24(hour, p))}>
+            {p}
+          </option>
+        ))}
       </select>
     </div>
   )

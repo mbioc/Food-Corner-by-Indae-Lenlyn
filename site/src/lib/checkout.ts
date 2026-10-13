@@ -60,6 +60,7 @@ export function validateStep(step: number, f: CheckoutForm, hasProof: boolean, p
     else if (f.eventDate < todayISO()) e.eventDate = 'That date has passed. Pick today or later.'
     else if (blocked.includes(f.eventDate)) e.eventDate = 'Lenlyn is fully booked on this date. Please pick another day.'
     if (!f.eventTime) e.eventTime = 'Pick a time.'
+    else if (f.eventTime < '08:00' || f.eventTime > '18:00') e.eventTime = 'Pick a time between 8:00 AM and 6:00 PM.'
     if (!f.zone) e.zone = 'Choose delivery or pick-up.'
     if (pickupOnly && f.zone && f.zone !== PICKUP_ID) e.zone = 'Your order has a pick-up-only package. Choose pick-up.'
     if (f.zone && f.zone !== PICKUP_ID && !f.address.trim()) e.address = 'We need the delivery address.'

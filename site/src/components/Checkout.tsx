@@ -2,7 +2,7 @@ import { ArrowLeft, ArrowsOut, Check, CheckCircle, CopySimple, DownloadSimple, I
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState, type ChangeEvent } from 'react'
 import { createPortal } from 'react-dom'
-import { BUSINESS, PAYMENTS, PICKUP_ID, TUPPERWARE, type PayChannel } from '../data/business'
+import { BUSINESS, ORDER_HOURS, PAYMENTS, PICKUP_ID, TUPPERWARE, type PayChannel } from '../data/business'
 import { asset } from '../lib/asset'
 import { useMenu } from '../lib/menu'
 import {
@@ -180,8 +180,8 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                   <Field label="Date needed" htmlFor="co-eventDate" error={errors.eventDate}>
                     <DateField id="co-eventDate" min={todayISO()} value={form.eventDate} invalid={!!errors.eventDate} onChange={(v) => set('eventDate', v)} />
                   </Field>
-                  <Field label="Time" htmlFor="co-eventTime" error={errors.eventTime}>
-                    <TimeField id="co-eventTime" value={form.eventTime} invalid={!!errors.eventTime} onChange={(v) => set('eventTime', v)} />
+                  <Field label="Time" htmlFor="co-eventTime" error={errors.eventTime} hint="Between 8:00 AM and 6:00 PM.">
+                    <TimeField id="co-eventTime" value={form.eventTime} invalid={!!errors.eventTime} onChange={(v) => set('eventTime', v)} fromHour={ORDER_HOURS.from} toHour={ORDER_HOURS.to} />
                   </Field>
                 </div>
                 {form.eventDate === todayISO() && (
