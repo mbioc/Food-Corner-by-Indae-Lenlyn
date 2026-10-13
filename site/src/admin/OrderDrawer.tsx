@@ -5,6 +5,7 @@ import { Button, inputClass } from '../components/ui'
 import { useAdmin } from './data'
 import { fmtDate, fmtTime, nextStatus, peso, STATUS } from './meta'
 import { adminApi, supabase, type Order, type OrderEvent, type OrderStatus } from './sb'
+import { printSlip } from './slip'
 import { PayPill, StatusPill } from './ui'
 
 const EVENT_LABEL: Record<string, string> = {
@@ -248,7 +249,7 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
       <section className="mt-6">
         <div className="flex items-center justify-between gap-3">
           <h3 className="display text-lg font-bold">History</h3>
-          <Button variant="ghost" size="sm" onClick={() => printSlip(order)}>
+          <Button variant="ghost" size="sm" onClick={() => printSlip(order) || toast('Allow pop-ups for this site to print the slip.')}>
             <Printer size={16} weight="bold" /> Print slip
           </Button>
         </div>
@@ -277,13 +278,3 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
   )
 }
 
-function printSlip(o: Order) {
-  const w = window.open('', '_blank', 'width=480,height=720')
-  if (!w) return
-  const esc = (s: string) => s.replace(/[&<>]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' })[c]!)
-  w.document.write(`<!doctype html><title>${o.id}</title><style>body{font:14px/1.45 Arial,sans-serif;margin:24px;color:#0d150d}h1{font-size:20px;margin:0 0 4px}pre{white-space:pre-wrap;font:inherit}</style>
-  <h1>Food Corner by Indae Lenlyn</h1><p>Kitchen slip · printed ${new Date().toLocaleString('en-PH')}</p>
-  <pre>${esc(o.summary)}</pre>${o.delivery_fee != null ? `<p>Delivery fee: ₱${o.delivery_fee}</p>` : ''}${o.staff_note ? `<p><b>Kitchen note:</b> ${esc(o.staff_note)}</p>` : ''}
-  <script>window.onload=()=>{window.print()}</script>`)
-  w.document.close()
-}
