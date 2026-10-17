@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ChatFirst } from './components/ChatFirst'
 import { Checkout } from './components/Checkout'
 import { Header } from './components/Header'
 import { Hero } from './components/Hero'
@@ -17,6 +18,7 @@ type PaxId = (typeof PAX_FILTERS)[number]['id']
 export default function App() {
   const [pax, setPax] = useState<PaxId>('all')
   const [tableOpen, setTableOpen] = useState(false)
+  const [chatFirstOpen, setChatFirstOpen] = useState(false)
   const [checkoutOpen, setCheckoutOpen] = useState(false)
 
   return (
@@ -40,6 +42,14 @@ export default function App() {
         onClose={() => setTableOpen(false)}
         onCheckout={() => {
           setTableOpen(false)
+          setChatFirstOpen(true)
+        }}
+      />
+      <ChatFirst
+        open={chatFirstOpen}
+        onClose={() => setChatFirstOpen(false)}
+        onContinue={() => {
+          setChatFirstOpen(false)
           setCheckoutOpen(true)
         }}
       />
