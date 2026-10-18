@@ -249,7 +249,7 @@ export const PACKAGES: Package[] = [
     groups: [
       { id: 'noodle', label: 'Noodles', choose: 1, options: [opt('bami', 'Bam-i'), opt('spaghetti', 'Spaghetti')] },
       { id: 'pork', label: 'Pork', choose: 1, options: [opt('pork-humba', 'Humba'), opt('pork-steak', 'Pork Steak')] },
-      { id: 'chicken', label: 'Chicken or Chopsuey', choose: 1, options: [opt('fried-chicken', 'Fried Chicken'), opt('chicken-buffalo', 'Chicken Buffalo'), opt('chicken-afritada', 'Chicken Afritada'), opt('chopsuey', 'Chopsuey')] },
+      { id: 'chicken', label: 'Chicken or Chopsuey', choose: 1, options: [opt('fried-chicken', 'Fried Chicken'), opt('chicken-buffalo', 'Chicken Buffalo'), opt('chopsuey', 'Chopsuey')] },
     ],
     freebies: ['Maja'],
   },
