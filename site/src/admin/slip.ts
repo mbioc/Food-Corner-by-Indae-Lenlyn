@@ -6,6 +6,13 @@ import type { Order } from './sb'
 const esc = (s: unknown) => String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!)
 const peso = (n: number) => `₱${Number(n).toLocaleString('en-PH')}`
 
+// "Your 5 trays: Spaghetti, Chopsuey" becomes a label with one bullet per dish, so the kitchen can tick them off.
+function detailHtml(d: string) {
+  const m = /^([^:]+):\s*(.+)$/.exec(d)
+  if (!m) return `<div class="b">${esc(d)}</div>`
+  return `<div class="d">${esc(m[1])}</div>${m[2].split(/,\s*/).map((x) => `<div class="b">${esc(x)}</div>`).join('')}`
+}
+
 function longDate(iso: string) {
   return new Date(`${iso.slice(0, 10)}T00:00:00`).toLocaleDateString('en-PH', { weekday: 'short', month: 'short', day: 'numeric' })
 }
@@ -33,7 +40,9 @@ body { padding: 2mm 5mm 6mm 5mm; font: 600 10pt/1.3 Arial, Helvetica, sans-serif
 .row > :last-child { text-align: right; white-space: nowrap; }
 .item { margin-bottom: 1.8mm; break-inside: avoid; }
 .item .name { font-size: 11pt; font-weight: 800; line-height: 1.2; }
-.item .d { font-size: 9pt; font-weight: 600; padding-left: 3mm; }
+.item .d { font-size: 9pt; font-weight: 800; padding-left: 1mm; margin-top: 0.6mm; }
+.item .b { display: flex; font-size: 9.5pt; font-weight: 600; padding-left: 1.5mm; }
+.item .b::before { content: '•'; flex: none; width: 3mm; font-weight: 800; }
 .tot { font-size: 12pt; font-weight: 800; }
 .note { font-size: 10pt; font-weight: 700; }
 .foot { font-size: 8pt; font-weight: 600; margin-top: 3mm; }
@@ -49,7 +58,7 @@ export function slipHtml(o: Order, printedAt = new Date()): string {
     .map(
       (it) => `<div class="item">
   <div class="name">${esc(it.qty)} x ${esc(it.title)}</div>
-  ${(it.detail ?? []).map((d) => `<div class="d">${esc(d)}</div>`).join('')}
+  ${(it.detail ?? []).map(detailHtml).join('')}
   <div class="row"><span></span><span>${peso(it.total)}</span></div>
 </div>`,
     )
