@@ -211,7 +211,7 @@ export const PACKAGES: Package[] = [
     price: 4000,
     paxMin: 20,
     paxMax: 20,
-    summary: 'Lechon belly, three main dishes of your choice and lumpia.',
+    summary: 'Lechon belly, three main dishes of your choice and lumpia. Add a customized cake for ₱4,700.',
     fixed: [
       { name: 'Lechon Belly (3 kg)', img: asset('/img/hero/lechon-belly.webp') },
       { name: 'Lumpia (50 pcs)', img: d('pork-lumpia') },
@@ -232,6 +232,7 @@ export const PACKAGES: Package[] = [
         ],
       },
     ],
+    addOns: [{ id: 'custom-cake', name: 'Customized cake', price: 700, max: 1 }],
   },
   {
     id: 'package-belly',
