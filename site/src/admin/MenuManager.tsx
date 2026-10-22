@@ -372,8 +372,9 @@ function Packages() {
               {draft.add_ons.map((a: Row, i: number) => {
                 const up = (patch: Row) => set({ add_ons: draft.add_ons.map((x: Row, j: number) => (j === i ? { ...x, ...patch } : x)) })
                 return (
-                  <div key={i} className="mb-2 grid grid-cols-2 gap-2 sm:grid-cols-[1fr_6rem_5rem_5rem_auto]">
-                    <input aria-label="Add-on name" className={`col-span-2 sm:col-span-1 ${inputClass()}`} value={a.name} onChange={(e) => up({ name: e.target.value, id: a.id || slug(e.target.value) })} placeholder="Name" />
+                  <div key={i} className="mb-2 grid grid-cols-[4rem_1fr] gap-2 sm:grid-cols-[4rem_1fr_6rem_5rem_5rem_auto]">
+                    <PhotoPicker src={a.img ?? ''} folder="packages" label={a.name || 'add-on'} onChange={(img) => up({ img })} />
+                    <input aria-label="Add-on name" className={`self-center ${inputClass()}`} value={a.name} onChange={(e) => up({ name: e.target.value, id: a.id || slug(e.target.value) })} placeholder="Name" />
                     <input aria-label="Price" type="number" className={`num ${inputClass()}`} value={a.price} onChange={(e) => up({ price: Number(e.target.value) || 0 })} placeholder="₱" />
                     <input aria-label="Per unit" className={inputClass()} value={a.perUnit ?? ''} onChange={(e) => up({ perUnit: e.target.value || undefined })} placeholder="per (kg)" />
                     <input aria-label="Maximum" type="number" className={`num ${inputClass()}`} value={a.max ?? ''} onChange={(e) => up({ max: Number(e.target.value) || undefined })} placeholder="max" />

@@ -145,7 +145,12 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
           <ul className="mt-3 divide-y divide-ink/10 rounded-[16px] bg-white px-4 ring-1 ring-inset ring-ink/10">
             {pkg.addOns.map((a) => (
               <li key={a.id} className="flex items-center justify-between gap-3 py-3">
-                <div>
+                {a.img && (
+                  <div className="foil size-16 shrink-0">
+                    <img src={a.img} alt="" />
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
                   <p className="font-semibold">{a.name}</p>
                   <p className="num text-sm text-ink-soft">
                     +{peso(a.price)}

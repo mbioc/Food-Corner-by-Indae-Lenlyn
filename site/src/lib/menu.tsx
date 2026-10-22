@@ -59,7 +59,7 @@ export async function fetchMenu(): Promise<Menu> {
       groups: (p.groups ?? []).map((g: any) => ({ ...g, options: (g.options ?? []).map(opt) })),
       freebies: p.freebies?.length ? p.freebies : undefined,
       pickupOnly: p.pickup_only,
-      addOns: p.add_ons?.length ? p.add_ons : undefined,
+      addOns: p.add_ons?.length ? p.add_ons.map((a: any) => (a.img ? { ...a, img: imgUrl(a.img) } : a)) : undefined,
     })),
     zones: zones.map((z) => ({ id: z.id, label: z.label, detail: z.detail, feeMin: z.fee_min, feeMax: z.fee_max, quote: z.quote })),
     blocked: blocked.map((b) => b.day),

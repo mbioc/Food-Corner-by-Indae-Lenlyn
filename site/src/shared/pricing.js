@@ -6,7 +6,7 @@
  * @typedef {{ id: string, kind: 'whole' | 'belly' | 'inyuha', label: string, kilos: number, price: number }} LechonOption
  * @typedef {{ id: string, name: string, img: string }} Opt
  * @typedef {{ id: string, label: string, choose: number, options: Opt[] }} ChoiceGroup
- * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number }} AddOn
+ * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number, img?: string }} AddOn
  * @typedef {{ id: string, code: string, name: string, price: number, paxMin: number, paxMax: number, summary: string,
  *   fixed: { name: string, img: string }[], groups: ChoiceGroup[], freebies?: string[], pickupOnly?: boolean, addOns?: AddOn[] }} Package
  * @typedef {{ id: string, label: string, detail: string, feeMin: number, feeMax: number, quote?: boolean }} Zone

@@ -118,7 +118,7 @@ export interface Package {
   groups: ChoiceGroup[] // customer picks
   freebies?: string[]
   pickupOnly?: boolean
-  addOns?: { id: string; name: string; price: number; perUnit?: string; max?: number }[]
+  addOns?: { id: string; name: string; price: number; perUnit?: string; max?: number; img?: string }[]
 }
 
 const opt = (id: string, name: string, img?: string) => ({ id, name, img: img ?? trayById(id)?.img ?? PACKAGE_ONLY_IMG[id] })
@@ -232,7 +232,7 @@ export const PACKAGES: Package[] = [
         ],
       },
     ],
-    addOns: [{ id: 'custom-cake', name: 'Customized cake', price: 700, max: 1 }],
+    addOns: [{ id: 'custom-cake', name: 'Customized cake', price: 700, max: 1, img: d('custom-cake') }],
   },
   {
     id: 'package-belly',
