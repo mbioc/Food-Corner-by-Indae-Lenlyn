@@ -84,7 +84,9 @@ export const WHOLE_LECHON: LechonOption[] = [
 
 export const LECHON_BELLY: LechonOption[] = [
   { id: 'belly-3', label: '3 kg', kilos: 3, price: 1500 },
+  { id: 'belly-4', label: '4 kg', kilos: 4, price: 2000 },
   { id: 'belly-5', label: '5 kg', kilos: 5, price: 2500 },
+  { id: 'belly-6', label: '6 kg', kilos: 6, price: 3000 },
 ]
 
 export const FREE_PALUTO = ['Paklay', 'Dinuguan'] as const
