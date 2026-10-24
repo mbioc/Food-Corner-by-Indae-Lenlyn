@@ -6,7 +6,7 @@
  * @typedef {{ id: string, kind: 'whole' | 'belly' | 'inyuha', label: string, kilos: number, price: number }} LechonOption
  * @typedef {{ id: string, name: string, img: string }} Opt
  * @typedef {{ id: string, label: string, choose: number, options: Opt[] }} ChoiceGroup
- * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number, img?: string, options?: string[] }} AddOn
+ * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number, img?: string, options?: string[], includes?: string }} AddOn
  * @typedef {{ id: string, code: string, name: string, price: number, paxMin: number, paxMax: number, summary: string,
  *   fixed: { name: string, img: string }[], groups: ChoiceGroup[], freebies?: string[], pickupOnly?: boolean, addOns?: AddOn[] }} Package
  * @typedef {{ id: string, label: string, detail: string, feeMin: number, feeMax: number, quote?: boolean }} Zone
@@ -17,12 +17,12 @@
 export const DOWNPAYMENT_MIN = 500
 
 export const FREE_PALUTO = ['Paklay', 'Dinuguan']
-// Ways the kitchen cooks the lechon's laman-loob (innards) when it's ordered as a paid paluto.
-export const PALUTO_STYLES = ['Paklay', 'Dinuguan', 'Sha-i (Fried)']
+// The paid paluto sa laman-loob (the lechon's innards) is cooked into all three of these dishes.
+export const PALUTO_DISHES = 'Paklay, Dinuguan, Sha-i (Fried)'
 
 // Priced extras staff can add to a walk-in order on their own.
 export const EXTRAS = [
-  { id: 'paluto', name: 'Paluto sa laman-loob', price: 250, options: PALUTO_STYLES, optionLabel: 'Cooked as' },
+  { id: 'paluto', name: 'Paluto sa laman-loob', price: 250, includes: PALUTO_DISHES },
   { id: 'tupperware', name: 'Containers', price: 150, options: ['White tupperware', 'Aluminum'], optionLabel: 'Type' },
 ]
 export const PICKUP_ID = 'pickup'
@@ -45,7 +45,7 @@ export function resolveLine(line, menu) {
     return {
       line: { ...line, qty, ...(option ? { option } : {}) },
       title: e.name,
-      detail: option ? [`${e.optionLabel}: ${option}`] : [],
+      detail: option ? [`${e.optionLabel}: ${option}`] : e.includes ? [`Includes: ${e.includes}`] : [],
       unitPrice: e.price,
       total: e.price * qty,
       img: '',
@@ -90,6 +90,7 @@ export function resolveLine(line, menu) {
         const opt = a.options?.length ? (a.options.includes(line.addOnOptions?.[a.id]) ? line.addOnOptions[a.id] : a.options[0]) : ''
         if (opt) addOnOptions[a.id] = opt
         detail.push(`Add-on: ${a.name}${opt ? ` (${opt})` : ''}${a.perUnit ? ` +${units} ${a.perUnit}` : ''}`)
+        if (a.includes) detail.push(`${a.name}: ${a.includes}`)
       }
     }
     const unitPrice = p.price + addOnTotal

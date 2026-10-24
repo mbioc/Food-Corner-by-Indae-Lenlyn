@@ -161,6 +161,7 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
                     +{peso(a.price)}
                     {a.perUnit ? ` per ${a.perUnit}` : ''}
                   </p>
+                  {a.includes && <p className="text-sm text-ink-soft">Includes {a.includes}</p>}
                 </div>
                 <Stepper label={a.name} min={0} max={a.max ?? 10} value={addOns[a.id] ?? 0} onChange={(n) => setAddOns((s) => ({ ...s, [a.id]: n }))} />
                 {a.options?.length && (addOns[a.id] ?? 0) > 0 ? (

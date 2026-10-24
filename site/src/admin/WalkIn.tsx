@@ -256,6 +256,7 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                   <div key={a.id} className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                     <p className="mr-auto text-sm font-semibold">
                       {a.name} <span className="num font-normal text-ink-soft">+{peso(a.price)}{a.perUnit ? ` per ${a.perUnit}` : ''}</span>
+                      {a.includes && <span className="block font-normal text-ink-soft">Includes {a.includes}</span>}
                     </p>
                     {a.options?.length && (addOns[a.id] ?? 0) > 0 ? (
                       <select aria-label={`How to cook the ${a.name}`} className={`${inputClass()} !h-9 !w-auto text-sm`} value={addOnOptions[a.id] ?? a.options[0]} onChange={(e) => setAddOnOptions((s) => ({ ...s, [a.id]: e.target.value }))}>
