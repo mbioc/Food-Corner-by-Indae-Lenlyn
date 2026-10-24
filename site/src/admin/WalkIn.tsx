@@ -5,13 +5,13 @@ import { Sheet } from '../components/Sheet'
 import { Button, Field, Stepper, inputClass } from '../components/ui'
 import type { Package } from '../data/menu'
 import { fetchMenu, type Menu } from '../lib/menu'
-import { FREE_PALUTO, PICKUP_ID, resolveLine } from '../shared/pricing.js'
+import { EXTRAS, FREE_PALUTO, PICKUP_ID, resolveLine } from '../shared/pricing.js'
 import { useAdmin } from './data'
 import { manilaToday, peso } from './meta'
 import { adminApi, type Order } from './sb'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type Line = { kind: string; refId: string; qty: number; choices?: Record<string, string[]>; addOns?: Record<string, number>; paluto?: string }
+type Line = { kind: string; refId: string; qty: number; choices?: Record<string, string[]>; addOns?: Record<string, number>; addOnOptions?: Record<string, string>; paluto?: string; option?: string }
 
 const PAY_METHODS = ['Cash', 'MariBank', 'PNB', 'Other']
 
@@ -28,6 +28,8 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
   const [lines, setLines] = useState<Line[]>([])
   const [building, setBuilding] = useState<Package | null>(null)
   const [choices, setChoices] = useState<Record<string, string[]>>({})
+  const [addOns, setAddOns] = useState<Record<string, number>>({})
+  const [addOnOptions, setAddOnOptions] = useState<Record<string, string>>({})
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
   const [email, setEmail] = useState('')
@@ -50,6 +52,8 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
     setLines([])
     setBuilding(null)
     setChoices({})
+    setAddOns({})
+    setAddOnOptions({})
     setName('')
     setMobile('')
     setEmail('')
@@ -94,9 +98,15 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
     if (kind === 'package') {
       const p = menu.packages.find((x) => x.id === id)
       if (!p) return
-      if (p.groups.length === 0) return addLine({ kind, refId: id, qty: 1, choices: {}, addOns: {} })
+      if (p.groups.length === 0 && !p.addOns?.length) return addLine({ kind, refId: id, qty: 1, choices: {}, addOns: {} })
       setChoices({})
+      setAddOns({})
+      setAddOnOptions({})
       return setBuilding(p)
+    }
+    if (kind === 'extra') {
+      const e = EXTRAS.find((x) => x.id === id)
+      return addLine({ kind, refId: id, qty: 1, ...(e?.options ? { option: e.options[0] } : {}) })
     }
     addLine({ kind, refId: id, qty: 1, ...(kind === 'lechon' ? { paluto: FREE_PALUTO[0] } : {}) })
   }
@@ -199,6 +209,14 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                   </option>
                 ))}
               </optgroup>
+              <optgroup label="Extras">
+                {EXTRAS.map((e) => (
+                  <option key={e.id} value={`extra|${e.id}`}>
+                    {e.name} · {peso(e.price)}
+                    {e.note ? ` (${e.note.toLowerCase()})` : ''}
+                  </option>
+                ))}
+              </optgroup>
             </select>
 
             {building && (
@@ -235,13 +253,30 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                     </fieldset>
                   )
                 })}
+                {building.addOns?.map((a) => (
+                  <div key={a.id} className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+                    <p className="mr-auto text-sm font-semibold">
+                      {a.name} <span className="num font-normal text-ink-soft">+{peso(a.price)}{a.perUnit ? ` per ${a.perUnit}` : ''}</span>
+                    </p>
+                    {a.options?.length && (addOns[a.id] ?? 0) > 0 ? (
+                      <select aria-label={`How to cook the ${a.name}`} className={`${inputClass()} !h-9 !w-auto text-sm`} value={addOnOptions[a.id] ?? a.options[0]} onChange={(e) => setAddOnOptions((s) => ({ ...s, [a.id]: e.target.value }))}>
+                        {a.options.map((o) => (
+                          <option key={o}>{o}</option>
+                        ))}
+                      </select>
+                    ) : null}
+                    <Stepper label={a.name} min={0} max={a.max ?? 10} value={addOns[a.id] ?? 0} onChange={(n) => setAddOns((s) => ({ ...s, [a.id]: n }))} />
+                  </div>
+                ))}
                 <div className="mt-4 flex gap-2">
                   <Button
                     variant="leaf"
                     size="sm"
                     disabled={!buildingDone}
                     onClick={() => {
-                      addLine({ kind: 'package', refId: building.id, qty: 1, choices, addOns: {} })
+                      const opts = Object.fromEntries((building.addOns ?? []).filter((a) => a.options?.length && (addOns[a.id] ?? 0) > 0).map((a) => [a.id, addOnOptions[a.id] ?? a.options![0]]))
+                      const picked = Object.fromEntries(Object.entries(addOns).filter(([, n]) => n > 0))
+                      addLine({ kind: 'package', refId: building.id, qty: 1, choices, addOns: picked, ...(Object.keys(opts).length ? { addOnOptions: opts } : {}) })
                       setBuilding(null)
                     }}
                   >
@@ -263,6 +298,16 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                       <p className="num shrink-0 font-bold">{peso(r.total)}</p>
                     </div>
                     {r.detail.length > 0 && <p className="mt-0.5 text-sm text-ink-soft">{r.detail.join(' · ')}</p>}
+                    {lines[i].kind === 'extra' && EXTRAS.find((e) => e.id === lines[i].refId)?.options && (
+                      <label className="mt-2 flex items-center gap-2 text-sm">
+                        Cooked as
+                        <select className={`${inputClass()} !h-9 !w-auto text-sm`} value={lines[i].option} onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? { ...x, option: e.target.value } : x)))}>
+                          {EXTRAS.find((e) => e.id === lines[i].refId)!.options!.map((o: string) => (
+                            <option key={o}>{o}</option>
+                          ))}
+                        </select>
+                      </label>
+                    )}
                     {lines[i].kind === 'lechon' && (
                       <label className="mt-2 flex items-center gap-2 text-sm">
                         Free paluto

@@ -17,6 +17,7 @@ export type Line =
       qty: number
       choices: Record<string, string[]> // groupId -> option ids
       addOns: Record<string, number> // addOnId -> units
+      addOnOptions?: Record<string, string> // addOnId -> chosen option, e.g. how the laman-loob is cooked
     }
 
 type DistOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never

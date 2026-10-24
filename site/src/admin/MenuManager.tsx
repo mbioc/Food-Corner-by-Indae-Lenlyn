@@ -381,6 +381,16 @@ function Packages() {
                     <button type="button" aria-label="Remove add-on" onClick={() => set({ add_ons: draft.add_ons.filter((_: Row, j: number) => j !== i) })} className="grid h-12 cursor-pointer place-items-center rounded-[10px] px-2 text-chili hover:bg-chili/10">
                       <Trash size={18} />
                     </button>
+                    <input
+                      aria-label="Choices for this add-on"
+                      className={`col-span-full ${inputClass()}`}
+                      defaultValue={(a.options ?? []).join(', ')}
+                      onBlur={(e) => {
+                        const options = e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
+                        up({ options: options.length ? options : undefined })
+                      }}
+                      placeholder="Choices, separated by commas (optional), e.g. Paklay, Dinuguan"
+                    />
                   </div>
                 )
               })}

@@ -6,7 +6,7 @@
  * @typedef {{ id: string, kind: 'whole' | 'belly' | 'inyuha', label: string, kilos: number, price: number }} LechonOption
  * @typedef {{ id: string, name: string, img: string }} Opt
  * @typedef {{ id: string, label: string, choose: number, options: Opt[] }} ChoiceGroup
- * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number, img?: string }} AddOn
+ * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number, img?: string, options?: string[] }} AddOn
  * @typedef {{ id: string, code: string, name: string, price: number, paxMin: number, paxMax: number, summary: string,
  *   fixed: { name: string, img: string }[], groups: ChoiceGroup[], freebies?: string[], pickupOnly?: boolean, addOns?: AddOn[] }} Package
  * @typedef {{ id: string, label: string, detail: string, feeMin: number, feeMax: number, quote?: boolean }} Zone
@@ -17,10 +17,18 @@
 export const DOWNPAYMENT_MIN = 500
 
 export const FREE_PALUTO = ['Paklay', 'Dinuguan']
+// Ways the kitchen cooks the lechon's laman-loob (innards) when it's ordered as a paid paluto.
+export const PALUTO_STYLES = ['Paklay', 'Dinuguan', 'Sha-i (Fried)']
+
+// Priced extras staff can add to a walk-in order on their own.
+export const EXTRAS = [
+  { id: 'paluto', name: 'Paluto sa laman-loob', price: 250, options: PALUTO_STYLES },
+  { id: 'tupperware', name: 'White tupperware containers', price: 150, note: 'For 5 dishes' },
+]
 export const PICKUP_ID = 'pickup'
 
 /**
- * @param {any} line  { kind, refId, qty, choices?, addOns?, paluto? }
+ * @param {any} line  { kind, refId, qty, choices?, addOns?, addOnOptions?, paluto?, option? }
  * @param {Menu} menu
  */
 export function resolveLine(line, menu) {
@@ -29,6 +37,20 @@ export function resolveLine(line, menu) {
     const t = menu.trays.find((x) => x.id === line.refId)
     if (!t) return null
     return { line: { ...line, qty }, title: t.name, detail: ['Large tray', ...(t.note ? [t.note] : [])], unitPrice: t.price, total: t.price * qty, img: t.img, pickupOnly: false }
+  }
+  if (line.kind === 'extra') {
+    const e = EXTRAS.find((x) => x.id === line.refId)
+    if (!e) return null
+    const option = e.options ? (e.options.includes(line.option) ? line.option : e.options[0]) : undefined
+    return {
+      line: { ...line, qty, ...(option ? { option } : {}) },
+      title: e.name,
+      detail: option ? [`Cooked as: ${option}`] : e.note ? [e.note] : [],
+      unitPrice: e.price,
+      total: e.price * qty,
+      img: '',
+      pickupOnly: false,
+    }
   }
   if (line.kind === 'lechon' || line.kind === 'belly' || line.kind === 'inyuha') {
     const kind = line.kind === 'lechon' ? 'whole' : line.kind
@@ -59,16 +81,20 @@ export function resolveLine(line, menu) {
     if (p.freebies?.length) detail.push(`Free: ${p.freebies.join(', ')}`)
     let addOnTotal = 0
     const addOns = line.addOns ?? {}
+    const addOnOptions = {}
     for (const a of p.addOns ?? []) {
       const units = Math.max(0, Math.min(a.max ?? 10, Math.floor(Number(addOns[a.id]) || 0)))
       if (units > 0) {
         addOnTotal += units * a.price
-        detail.push(`Add-on: ${a.name}${a.perUnit ? ` +${units} ${a.perUnit}` : ''}`)
+        // Add-ons with choices (how the laman-loob is cooked) keep the customer's pick, or the first one.
+        const opt = a.options?.length ? (a.options.includes(line.addOnOptions?.[a.id]) ? line.addOnOptions[a.id] : a.options[0]) : ''
+        if (opt) addOnOptions[a.id] = opt
+        detail.push(`Add-on: ${a.name}${opt ? ` (${opt})` : ''}${a.perUnit ? ` +${units} ${a.perUnit}` : ''}`)
       }
     }
     const unitPrice = p.price + addOnTotal
     return {
-      line: { ...line, qty },
+      line: { ...line, qty, ...(Object.keys(addOnOptions).length ? { addOnOptions } : {}) },
       title: p.name,
       detail,
       unitPrice,

@@ -13,12 +13,14 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
   const pkg = incoming ?? last.current
   const [choices, setChoices] = useState<Record<string, string[]>>({})
   const [addOns, setAddOns] = useState<Record<string, number>>({})
+  const [addOnOptions, setAddOnOptions] = useState<Record<string, string>>({})
   const [qty, setQty] = useState(1)
   const firstImg = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     setChoices({})
     setAddOns({})
+    setAddOnOptions({})
     setQty(1)
   }, [pkg?.id])
 
@@ -37,6 +39,9 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
   const missing = pkg.groups.filter((g) => (choices[g.id]?.length ?? 0) < g.choose)
   const addOnTotal = (pkg.addOns ?? []).reduce((n, a) => n + (addOns[a.id] ?? 0) * a.price, 0)
   const total = (pkg.price + addOnTotal) * qty
+  // Only send the cooking choices for add-ons that are actually on the order.
+  const pickedEntries = (pkg.addOns ?? []).filter((a) => a.options?.length && (addOns[a.id] ?? 0) > 0).map((a) => [a.id, addOnOptions[a.id] ?? a.options![0]])
+  const pickedOptions = pickedEntries.length ? Object.fromEntries(pickedEntries) : undefined
 
   return (
     <Sheet
@@ -57,7 +62,7 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
               className="flex-1"
               disabled={missing.length > 0}
               onClick={() => {
-                add({ kind: 'package', refId: pkg.id, choices, addOns, qty }, firstImg.current)
+                add({ kind: 'package', refId: pkg.id, choices, addOns, qty, ...(pickedOptions ? { addOnOptions: pickedOptions } : {}) }, firstImg.current)
                 onClose()
               }}
             >
@@ -144,7 +149,7 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
           <h3 className="display text-lg font-bold">Add-ons</h3>
           <ul className="mt-3 divide-y divide-ink/10 rounded-[16px] bg-white px-4 ring-1 ring-inset ring-ink/10">
             {pkg.addOns.map((a) => (
-              <li key={a.id} className="flex items-center justify-between gap-3 py-3">
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
                 {a.img && (
                   <div className="foil size-16 shrink-0">
                     <img src={a.img} alt="" />
@@ -158,6 +163,29 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
                   </p>
                 </div>
                 <Stepper label={a.name} min={0} max={a.max ?? 10} value={addOns[a.id] ?? 0} onChange={(n) => setAddOns((s) => ({ ...s, [a.id]: n }))} />
+                {a.options?.length && (addOns[a.id] ?? 0) > 0 ? (
+                  <div className="basis-full pb-1" role="radiogroup" aria-label={`How to cook the ${a.name}`}>
+                    <p className="text-sm font-semibold">How should we cook it?</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {a.options.map((o) => {
+                        const on = (addOnOptions[a.id] ?? a.options![0]) === o
+                        return (
+                          <button
+                            key={o}
+                            type="button"
+                            role="radio"
+                            aria-checked={on}
+                            onClick={() => setAddOnOptions((s) => ({ ...s, [a.id]: o }))}
+                            className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors ${on ? 'bg-leaf text-white' : 'bg-ink/6 hover:bg-ink/10'}`}
+                          >
+                            {on && <Check size={14} weight="bold" />}
+                            {o}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ) : null}
               </li>
             ))}
           </ul>

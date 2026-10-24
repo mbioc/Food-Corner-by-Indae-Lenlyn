@@ -118,7 +118,7 @@ export interface Package {
   groups: ChoiceGroup[] // customer picks
   freebies?: string[]
   pickupOnly?: boolean
-  addOns?: { id: string; name: string; price: number; perUnit?: string; max?: number; img?: string }[]
+  addOns?: { id: string; name: string; price: number; perUnit?: string; max?: number; img?: string; options?: string[] }[]
 }
 
 const opt = (id: string, name: string, img?: string) => ({ id, name, img: img ?? trayById(id)?.img ?? PACKAGE_ONLY_IMG[id] })
@@ -310,7 +310,7 @@ export const PACKAGES: Package[] = [
     fixed: [{ name: 'Whole Lechon (20 kg live weight)', img: asset('/img/hero/lechon-whole.webp') }],
     groups: [{ id: 'dishes', label: 'Your 5 trays', choose: 5, options: FIVE_OF_EIGHT }],
     addOns: [
-      { id: 'paluto-lamanloob', name: 'Paluto sa laman-loob', price: 250, max: 1 },
+      { id: 'paluto-lamanloob', name: 'Paluto sa laman-loob', price: 250, max: 1, options: ['Paklay', 'Dinuguan', 'Sha-i (Fried)'] },
       { id: 'lechon-upgrade', name: 'Upgrade lechon weight', price: 300, perUnit: 'kg', max: 20 },
     ],
   },
