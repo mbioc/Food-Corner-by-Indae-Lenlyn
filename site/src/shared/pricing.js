@@ -16,7 +16,6 @@
 // Smallest down payment a customer may choose (pesos). The owner can change it in the admin settings.
 export const DOWNPAYMENT_MIN = 500
 
-export const FREE_PALUTO = ['Paklay', 'Dinuguan']
 // The paid paluto sa laman-loob (the lechon's innards) is cooked into all three of these dishes.
 export const PALUTO_DISHES = 'Paklay, Dinuguan, Sha-i (Fried)'
 
@@ -28,7 +27,7 @@ export const EXTRAS = [
 export const PICKUP_ID = 'pickup'
 
 /**
- * @param {any} line  { kind, refId, qty, choices?, addOns?, addOnOptions?, paluto?, option? }
+ * @param {any} line  { kind, refId, qty, choices?, addOns?, addOnOptions?, option? }
  * @param {Menu} menu
  */
 export function resolveLine(line, menu) {
@@ -48,7 +47,7 @@ export function resolveLine(line, menu) {
       detail: option ? [`${e.optionLabel}: ${option}`] : e.includes ? [`Includes: ${e.includes}`] : [],
       unitPrice: e.price,
       total: e.price * qty,
-      img: '',
+      img: e.id === 'paluto' ? (menu.lechonImg?.whole ?? '') : '',
       pickupOnly: false,
     }
   }
@@ -57,11 +56,12 @@ export function resolveLine(line, menu) {
     const o = menu.lechon.find((x) => x.id === line.refId && x.kind === kind)
     if (!o) return null
     const whole = kind === 'whole'
-    const paluto = FREE_PALUTO.includes(line.paluto) ? line.paluto : FREE_PALUTO[0]
+    // Whole lechon no longer comes with a free paluto; customers add the paid one (EXTRAS) instead.
+    const { paluto: _old, ...rest } = line
     return {
-      line: { ...line, qty, ...(whole ? { paluto } : {}) },
+      line: { ...rest, qty },
       title: whole ? `Whole Lechon, ${o.label}` : kind === 'belly' ? `Lechon Belly, ${o.label}` : `Lechon Inyuha roasting, ${o.label}`,
-      detail: whole ? [`Free paluto: ${paluto}`] : kind === 'inyuha' ? ['You bring the pig, we roast it'] : [],
+      detail: kind === 'inyuha' ? ['You bring the pig, we roast it'] : [],
       unitPrice: o.price,
       total: o.price * qty,
       img: menu.lechonImg?.[kind] ?? '',

@@ -98,7 +98,7 @@ export const POST = route(async (request) => {
     address: form.address || null,
     notes: form.notes || null,
     pay_channel: amountPaid > 0 ? form.payMethod : null,
-    items: resolved.map((r) => ({ kind: r.line.kind, refId: r.line.refId, choices: r.line.choices, addOns: r.line.addOns, addOnOptions: r.line.addOnOptions, paluto: r.line.paluto, option: r.line.option, title: r.title, detail: r.detail, qty: r.line.qty, unitPrice: r.unitPrice, total: r.total })),
+    items: resolved.map((r) => ({ kind: r.line.kind, refId: r.line.refId, choices: r.line.choices, addOns: r.line.addOns, addOnOptions: r.line.addOnOptions, option: r.line.option, title: r.title, detail: r.detail, qty: r.line.qty, unitPrice: r.unitPrice, total: r.total })),
     subtotal,
     delivery_fee: deliveryFee,
     amount_paid: amountPaid,

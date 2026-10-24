@@ -89,8 +89,6 @@ export const LECHON_BELLY: LechonOption[] = [
   { id: 'belly-6', label: '6 kg', kilos: 6, price: 3000 },
 ]
 
-export const FREE_PALUTO = ['Paklay', 'Dinuguan'] as const
-
 // Roasting fee when the customer brings their own pig (Lechon Inyuha Babuy).
 export const LECHON_INYUHA: LechonOption[] = [
   { id: 'inyuha-20-40', label: '20 to 40 kg', kilos: 40, price: 2500 },

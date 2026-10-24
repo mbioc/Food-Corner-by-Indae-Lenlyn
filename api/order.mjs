@@ -94,7 +94,7 @@ export const POST = route(async (request) => {
   const proofPath = `${form.eventDate.slice(0, 7)}/${orderId}.${ext}`
   await storage.upload('payment-proofs', proofPath, bytes, m[1])
 
-  const items = resolved.map((r) => ({ kind: r.line.kind, refId: r.line.refId, choices: r.line.choices, addOns: r.line.addOns, addOnOptions: r.line.addOnOptions, paluto: r.line.paluto, option: r.line.option, title: r.title, detail: r.detail, qty: r.line.qty, unitPrice: r.unitPrice, total: r.total }))
+  const items = resolved.map((r) => ({ kind: r.line.kind, refId: r.line.refId, choices: r.line.choices, addOns: r.line.addOns, addOnOptions: r.line.addOnOptions, option: r.line.option, title: r.title, detail: r.detail, qty: r.line.qty, unitPrice: r.unitPrice, total: r.total }))
   const summary = [
     `FOOD CORNER ORDER ${orderId}`,
     '',

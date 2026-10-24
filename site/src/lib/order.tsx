@@ -7,7 +7,8 @@ import { usePricingMenu } from './menu'
 
 export type Line =
   | { key: string; kind: 'tray'; refId: string; qty: number }
-  | { key: string; kind: 'lechon'; refId: string; qty: number; paluto?: string }
+  | { key: string; kind: 'lechon'; refId: string; qty: number }
+  | { key: string; kind: 'extra'; refId: string; qty: number; option?: string }
   | { key: string; kind: 'belly'; refId: string; qty: number }
   | { key: string; kind: 'inyuha'; refId: string; qty: number }
   | {

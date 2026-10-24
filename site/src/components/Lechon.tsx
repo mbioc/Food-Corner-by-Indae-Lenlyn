@@ -1,6 +1,6 @@
 import { Plus } from '@phosphor-icons/react'
 import { useRef, useState } from 'react'
-import { FREE_PALUTO } from '../shared/pricing.js'
+import { EXTRAS } from '../shared/pricing.js'
 import { useMenu } from '../lib/menu'
 import { BUSINESS } from '../data/business'
 import { peso, useOrder } from '../lib/order'
@@ -34,7 +34,8 @@ export function Lechon() {
   const { add } = useOrder()
   const { whole: WHOLE_LECHON, belly: LECHON_BELLY, inyuha: INYUHA } = useMenu()
   const [whole, setWhole] = useState(WHOLE_LECHON[0]?.id ?? '')
-  const [paluto, setPaluto] = useState<string>(FREE_PALUTO[0])
+  const [paluto, setPaluto] = useState<'no' | 'yes'>('no')
+  const PALUTO = EXTRAS.find((e) => e.id === 'paluto')!
   const [belly, setBelly] = useState(LECHON_BELLY[0]?.id ?? '')
   const wholeImg = useRef<HTMLDivElement>(null)
   const bellyImg = useRef<HTMLDivElement>(null)
@@ -50,7 +51,7 @@ export function Lechon() {
           <h2 id="lechon-h" className="display text-4xl font-extrabold leading-[1.05] text-white md:text-5xl">
             Lechon, freshly roasted in Tabgas
           </h2>
-          <p className="mt-3 text-lg text-white/85">Order the whole pig or just the belly. Every whole lechon comes with a free paluto of paklay or dinuguan.</p>
+          <p className="mt-3 text-lg text-white/85">Order the whole pig or just the belly. Add a paluto sa laman-loob to get paklay, dinuguan and sha-i from the innards.</p>
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[1.35fr_1fr]">
@@ -67,12 +68,30 @@ export function Lechon() {
               <div className="mt-5">
                 <Segmented name="Lechon size" value={w?.id ?? ''} onChange={setWhole} options={WHOLE_LECHON.map((o) => ({ value: o.id, label: o.label, sub: peso(o.price) }))} />
               </div>
-              <p className="mt-5 text-sm font-semibold text-white">Free paluto</p>
+              <p className="mt-5 text-sm font-semibold text-white">Paluto sa laman-loob</p>
+              <p className="text-sm text-white/75">{PALUTO.includes}</p>
               <div className="mt-2 max-w-sm">
-                <Segmented name="Free paluto" value={paluto} onChange={setPaluto} options={FREE_PALUTO.map((p) => ({ value: p, label: p }))} />
+                <Segmented
+                  name="Paluto sa laman-loob"
+                  value={paluto}
+                  onChange={setPaluto}
+                  options={[
+                    { value: 'no', label: 'No paluto' },
+                    { value: 'yes', label: 'Add paluto', sub: `+${peso(PALUTO.price)}` },
+                  ]}
+                />
               </div>
-              <Button className="mt-6 w-full sm:w-auto" size="lg" onClick={() => add({ kind: 'lechon', refId: w.id, paluto }, wholeImg.current)}>
-                <span className="num">Add {w.label} lechon · {peso(w.price)}</span>
+              <Button
+                className="mt-6 w-full sm:w-auto"
+                size="lg"
+                onClick={() => {
+                  add({ kind: 'lechon', refId: w.id }, wholeImg.current)
+                  if (paluto === 'yes') add({ kind: 'extra', refId: 'paluto' })
+                }}
+              >
+                <span className="num">
+                  Add {w.label} lechon · {peso(w.price + (paluto === 'yes' ? PALUTO.price : 0))}
+                </span>
               </Button>
             </div>
           </article>

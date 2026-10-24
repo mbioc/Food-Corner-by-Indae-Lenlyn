@@ -5,13 +5,13 @@ import { Sheet } from '../components/Sheet'
 import { Button, Field, Stepper, inputClass } from '../components/ui'
 import type { Package } from '../data/menu'
 import { fetchMenu, type Menu } from '../lib/menu'
-import { EXTRAS, FREE_PALUTO, PICKUP_ID, resolveLine } from '../shared/pricing.js'
+import { EXTRAS, PICKUP_ID, resolveLine } from '../shared/pricing.js'
 import { useAdmin } from './data'
 import { manilaToday, peso } from './meta'
 import { adminApi, type Order } from './sb'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type Line = { kind: string; refId: string; qty: number; choices?: Record<string, string[]>; addOns?: Record<string, number>; addOnOptions?: Record<string, string>; paluto?: string; option?: string }
+type Line = { kind: string; refId: string; qty: number; choices?: Record<string, string[]>; addOns?: Record<string, number>; addOnOptions?: Record<string, string>; option?: string }
 
 const PAY_METHODS = ['Cash', 'MariBank', 'PNB', 'Other']
 
@@ -108,7 +108,7 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
       const e = EXTRAS.find((x) => x.id === id)
       return addLine({ kind, refId: id, qty: 1, ...(e?.options ? { option: e.options[0] } : {}) })
     }
-    addLine({ kind, refId: id, qty: 1, ...(kind === 'lechon' ? { paluto: FREE_PALUTO[0] } : {}) })
+    addLine({ kind, refId: id, qty: 1 })
   }
 
   const toggle = (groupId: string, optionId: string, limit: number) =>
@@ -304,16 +304,6 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                         <select className={`${inputClass()} !h-9 !w-auto text-sm`} value={lines[i].option} onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? { ...x, option: e.target.value } : x)))}>
                           {EXTRAS.find((e) => e.id === lines[i].refId)!.options!.map((o: string) => (
                             <option key={o}>{o}</option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
-                    {lines[i].kind === 'lechon' && (
-                      <label className="mt-2 flex items-center gap-2 text-sm">
-                        Free paluto
-                        <select className={`${inputClass()} !h-9 !w-auto text-sm`} value={lines[i].paluto} onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? { ...x, paluto: e.target.value } : x)))}>
-                          {FREE_PALUTO.map((p: string) => (
-                            <option key={p}>{p}</option>
                           ))}
                         </select>
                       </label>
