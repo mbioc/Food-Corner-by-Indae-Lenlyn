@@ -22,8 +22,8 @@ export const PALUTO_STYLES = ['Paklay', 'Dinuguan', 'Sha-i (Fried)']
 
 // Priced extras staff can add to a walk-in order on their own.
 export const EXTRAS = [
-  { id: 'paluto', name: 'Paluto sa laman-loob', price: 250, options: PALUTO_STYLES },
-  { id: 'tupperware', name: 'White tupperware containers', price: 150, note: 'For 5 dishes' },
+  { id: 'paluto', name: 'Paluto sa laman-loob', price: 250, options: PALUTO_STYLES, optionLabel: 'Cooked as' },
+  { id: 'tupperware', name: 'Containers', price: 150, options: ['White tupperware', 'Aluminum'], optionLabel: 'Type' },
 ]
 export const PICKUP_ID = 'pickup'
 
@@ -45,7 +45,7 @@ export function resolveLine(line, menu) {
     return {
       line: { ...line, qty, ...(option ? { option } : {}) },
       title: e.name,
-      detail: option ? [`Cooked as: ${option}`] : e.note ? [e.note] : [],
+      detail: option ? [`${e.optionLabel}: ${option}`] : [],
       unitPrice: e.price,
       total: e.price * qty,
       img: '',

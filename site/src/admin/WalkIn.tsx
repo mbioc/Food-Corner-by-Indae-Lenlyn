@@ -213,7 +213,6 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                 {EXTRAS.map((e) => (
                   <option key={e.id} value={`extra|${e.id}`}>
                     {e.name} · {peso(e.price)}
-                    {e.note ? ` (${e.note.toLowerCase()})` : ''}
                   </option>
                 ))}
               </optgroup>
@@ -300,7 +299,7 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                     {r.detail.length > 0 && <p className="mt-0.5 text-sm text-ink-soft">{r.detail.join(' · ')}</p>}
                     {lines[i].kind === 'extra' && EXTRAS.find((e) => e.id === lines[i].refId)?.options && (
                       <label className="mt-2 flex items-center gap-2 text-sm">
-                        Cooked as
+                        {EXTRAS.find((e) => e.id === lines[i].refId)!.optionLabel}
                         <select className={`${inputClass()} !h-9 !w-auto text-sm`} value={lines[i].option} onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? { ...x, option: e.target.value } : x)))}>
                           {EXTRAS.find((e) => e.id === lines[i].refId)!.options!.map((o: string) => (
                             <option key={o}>{o}</option>
