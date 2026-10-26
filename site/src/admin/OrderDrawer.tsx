@@ -16,6 +16,7 @@ const EVENT_LABEL: Record<string, string> = {
   delivery_fee: 'Delivery fee updated',
   balance_paid: 'Balance received, fully paid',
   balance_unpaid: 'Balance set back to unpaid',
+  amount_paid: 'Amount paid corrected',
   note: 'Note',
 }
 
@@ -29,6 +30,8 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
   const [fee, setFee] = useState('')
   const [note, setNote] = useState('')
   const [notify, setNotify] = useState(true)
+  // Amount being corrected, or null when not editing.
+  const [paidEdit, setPaidEdit] = useState<string | null>(null)
   const [busy, setBusy] = useState<string | null>(null)
 
   const id = incoming?.id
@@ -37,6 +40,7 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
     setFee(incoming.delivery_fee?.toString() ?? '')
     setNote(incoming.staff_note ?? '')
     setProofUrl(null)
+    setPaidEdit(null)
     supabase.from('order_events').select('*').eq('order_id', id).order('created_at').then(({ data }) => setEvents((data as OrderEvent[]) ?? []))
     if (incoming.proof_path)
       supabase.storage
@@ -193,7 +197,45 @@ export function OrderDrawer({ order: incoming, onClose }: { order: Order | null;
           <span className="num font-semibold text-ink">{peso(order.amount_paid)}</span>
           {order.amount_paid < order.subtotal ? ' down payment' : ''} via {order.pay_channel ?? '—'}
           {order.reference ? ` · Ref ${order.reference}` : ''}
+          {paidEdit === null && (
+            <>
+              {' · '}
+              <button type="button" disabled={!!busy} onClick={() => setPaidEdit(String(order.amount_paid))} className="cursor-pointer font-semibold text-leaf underline">
+                Change amount
+              </button>
+            </>
+          )}
         </p>
+        {paidEdit !== null && (
+          <div className="mt-2 rounded-[12px] bg-white p-3 ring-1 ring-inset ring-ink/10">
+            <label htmlFor="paid-edit" className="text-sm font-semibold">
+              Amount the customer actually paid (₱)
+            </label>
+            <p className="text-sm text-ink-soft">Use this when the screenshot doesn't match, like a deposit sent as full payment. The balance updates by itself.</p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <input id="paid-edit" type="number" inputMode="numeric" min={0} max={order.subtotal} value={paidEdit} onChange={(e) => setPaidEdit(e.target.value)} className={`num ${inputClass()} !w-40`} />
+              <Button
+                variant="leaf"
+                size="sm"
+                disabled={!!busy || paidEdit === '' || Number(paidEdit) < 0 || Number(paidEdit) > order.subtotal || Number(paidEdit) === order.amount_paid}
+                onClick={async () => {
+                  await update('paid', { amountPaid: Number(paidEdit) }, 'Amount paid updated')
+                  setPaidEdit(null)
+                }}
+              >
+                Save amount
+              </Button>
+              <Button variant="ghost" size="sm" disabled={!!busy} onClick={() => setPaidEdit(null)}>
+                Cancel
+              </Button>
+            </div>
+            {paidEdit !== '' && Number(paidEdit) >= 0 && Number(paidEdit) <= order.subtotal && (
+              <p className="num mt-2 text-sm font-semibold">
+                {Number(paidEdit) >= order.subtotal ? 'Full payment' : `Down payment · balance to collect ${peso(order.subtotal - Number(paidEdit))}`}
+              </p>
+            )}
+          </div>
+        )}
         {order.amount_paid < order.subtotal &&
           (order.balance_paid_at ? (
             <p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[12px] bg-leaf/10 p-3 text-sm font-semibold text-leaf-700">
