@@ -2,7 +2,7 @@ import { Check, Trash } from '@phosphor-icons/react'
 import { useEffect, useMemo, useState } from 'react'
 import { DateField, TimeField } from '../components/DateTimeFields'
 import { Sheet } from '../components/Sheet'
-import { Button, Field, Stepper, inputClass } from '../components/ui'
+import { Button, CheckChips, Field, Stepper, inputClass } from '../components/ui'
 import type { Package } from '../data/menu'
 import { fetchMenu, type Menu } from '../lib/menu'
 import { EXTRAS, PICKUP_ID, resolveLine } from '../shared/pricing.js'
@@ -11,7 +11,7 @@ import { manilaToday, peso } from './meta'
 import { adminApi, type Order } from './sb'
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-type Line = { kind: string; refId: string; qty: number; choices?: Record<string, string[]>; addOns?: Record<string, number>; addOnOptions?: Record<string, string>; option?: string }
+type Line = { kind: string; refId: string; qty: number; choices?: Record<string, string[]>; addOns?: Record<string, number>; addOnOptions?: Record<string, string[]>; option?: string; picks?: string[] }
 
 const PAY_METHODS = ['Cash', 'MariBank', 'PNB', 'Other']
 
@@ -29,7 +29,7 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
   const [building, setBuilding] = useState<Package | null>(null)
   const [choices, setChoices] = useState<Record<string, string[]>>({})
   const [addOns, setAddOns] = useState<Record<string, number>>({})
-  const [addOnOptions, setAddOnOptions] = useState<Record<string, string>>({})
+  const [addOnOptions, setAddOnOptions] = useState<Record<string, string[]>>({})
   const [name, setName] = useState('')
   const [mobile, setMobile] = useState('')
   const [email, setEmail] = useState('')
@@ -106,7 +106,8 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
     }
     if (kind === 'extra') {
       const e = EXTRAS.find((x) => x.id === id)
-      return addLine({ kind, refId: id, qty: 1, ...(e?.options ? { option: e.options[0] } : {}) })
+      if (!e) return
+      return addLine({ kind, refId: id, qty: 1, ...(e.multi ? { picks: [e.options[0]] } : { option: e.options[0] }) })
     }
     addLine({ kind, refId: id, qty: 1 })
   }
@@ -255,17 +256,19 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                 {building.addOns?.map((a) => (
                   <div key={a.id} className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
                     <p className="mr-auto text-sm font-semibold">
-                      {a.name} <span className="num font-normal text-ink-soft">+{peso(a.price)}{a.perUnit ? ` per ${a.perUnit}` : ''}</span>
-                      {a.includes && <span className="block font-normal text-ink-soft">Includes {a.includes}</span>}
+                      {a.name}{' '}
+                      <span className="num font-normal text-ink-soft">
+                        +{peso(a.price)}
+                        {a.options?.length ? ' each' : a.perUnit ? ` per ${a.perUnit}` : ''}
+                      </span>
                     </p>
-                    {a.options?.length && (addOns[a.id] ?? 0) > 0 ? (
-                      <select aria-label={`How to cook the ${a.name}`} className={`${inputClass()} !h-9 !w-auto text-sm`} value={addOnOptions[a.id] ?? a.options[0]} onChange={(e) => setAddOnOptions((s) => ({ ...s, [a.id]: e.target.value }))}>
-                        {a.options.map((o) => (
-                          <option key={o}>{o}</option>
-                        ))}
-                      </select>
-                    ) : null}
-                    <Stepper label={a.name} min={0} max={a.max ?? 10} value={addOns[a.id] ?? 0} onChange={(n) => setAddOns((s) => ({ ...s, [a.id]: n }))} />
+                    {a.options?.length ? (
+                      <div className="basis-full">
+                        <CheckChips label={a.name} options={a.options} value={addOnOptions[a.id] ?? []} onChange={(v) => setAddOnOptions((s) => ({ ...s, [a.id]: v }))} />
+                      </div>
+                    ) : (
+                      <Stepper label={a.name} min={0} max={a.max ?? 10} value={addOns[a.id] ?? 0} onChange={(n) => setAddOns((s) => ({ ...s, [a.id]: n }))} />
+                    )}
                   </div>
                 ))}
                 <div className="mt-4 flex gap-2">
@@ -274,7 +277,7 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                     size="sm"
                     disabled={!buildingDone}
                     onClick={() => {
-                      const opts = Object.fromEntries((building.addOns ?? []).filter((a) => a.options?.length && (addOns[a.id] ?? 0) > 0).map((a) => [a.id, addOnOptions[a.id] ?? a.options![0]]))
+                      const opts = Object.fromEntries(Object.entries(addOnOptions).filter(([, v]) => v.length))
                       const picked = Object.fromEntries(Object.entries(addOns).filter(([, n]) => n > 0))
                       addLine({ kind: 'package', refId: building.id, qty: 1, choices, addOns: picked, ...(Object.keys(opts).length ? { addOnOptions: opts } : {}) })
                       setBuilding(null)
@@ -298,16 +301,27 @@ export function WalkInSheet({ open, onClose, onSaved }: { open: boolean; onClose
                       <p className="num shrink-0 font-bold">{peso(r.total)}</p>
                     </div>
                     {r.detail.length > 0 && <p className="mt-0.5 text-sm text-ink-soft">{r.detail.join(' · ')}</p>}
-                    {lines[i].kind === 'extra' && EXTRAS.find((e) => e.id === lines[i].refId)?.options && (
-                      <label className="mt-2 flex items-center gap-2 text-sm">
-                        {EXTRAS.find((e) => e.id === lines[i].refId)!.optionLabel}
-                        <select className={`${inputClass()} !h-9 !w-auto text-sm`} value={lines[i].option} onChange={(e) => setLines((cur) => cur.map((x, j) => (j === i ? { ...x, option: e.target.value } : x)))}>
-                          {EXTRAS.find((e) => e.id === lines[i].refId)!.options!.map((o: string) => (
-                            <option key={o}>{o}</option>
-                          ))}
-                        </select>
-                      </label>
-                    )}
+                    {lines[i].kind === 'extra' &&
+                      (() => {
+                        const e = EXTRAS.find((x) => x.id === lines[i].refId)
+                        if (!e) return null
+                        const set = (patch: Partial<Line>) => setLines((cur) => cur.map((x, j) => (j === i ? { ...x, ...patch } : x)))
+                        return e.multi ? (
+                          <div className="mt-2">
+                            <p className="mb-1.5 text-sm">{peso(e.price)} per dish ticked</p>
+                            <CheckChips label={e.name} options={e.options} value={r.line.picks} onChange={(v) => v.length && set({ picks: v })} />
+                          </div>
+                        ) : (
+                          <label className="mt-2 flex items-center gap-2 text-sm">
+                            {e.optionLabel}
+                            <select className={`${inputClass()} !h-9 !w-auto text-sm`} value={lines[i].option} onChange={(ev) => set({ option: ev.target.value })}>
+                              {e.options.map((o: string) => (
+                                <option key={o}>{o}</option>
+                              ))}
+                            </select>
+                          </label>
+                        )
+                      })()}
                     <div className="mt-2 flex items-center justify-between">
                       <Stepper label={`quantity of ${r.title}`} value={lines[i].qty} onChange={(n) => setLines((cur) => cur.map((x, j) => (j === i ? { ...x, qty: Math.max(1, Math.min(20, n)) } : x)))} />
                       <button type="button" onClick={() => setLines((cur) => cur.filter((_, j) => j !== i))} className="inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-[10px] px-3 text-sm font-medium text-chili hover:bg-chili/10">

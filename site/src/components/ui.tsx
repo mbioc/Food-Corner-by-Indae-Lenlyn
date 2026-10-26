@@ -1,4 +1,4 @@
-import { Minus, Plus } from '@phosphor-icons/react'
+import { Check, Minus, Plus } from '@phosphor-icons/react'
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 
 type Variant = 'sun' | 'leaf' | 'ghost' | 'ghost-light'
@@ -72,4 +72,30 @@ export const inputClass = (invalid?: boolean) =>
 
 export function PriceTag({ amount, className = '' }: { amount: string; className?: string }) {
   return <span className={`num display inline-block font-extrabold leading-none tracking-[-0.02em] ${className}`}>{amount}</span>
+}
+
+/** Tick any number of options, e.g. which paluto dishes to cook (each one is charged). */
+export function CheckChips({ label, options, value, onChange, dark = false }: { label: string; options: string[]; value: string[]; onChange: (v: string[]) => void; dark?: boolean }) {
+  return (
+    <div role="group" aria-label={label} className="flex flex-wrap gap-2">
+      {options.map((o) => {
+        const on = value.includes(o)
+        return (
+          <button
+            key={o}
+            type="button"
+            role="checkbox"
+            aria-checked={on}
+            onClick={() => onChange(on ? value.filter((x) => x !== o) : options.filter((x) => x === o || value.includes(x)))}
+            className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors ${
+              on ? (dark ? 'bg-sun text-ink' : 'bg-leaf text-white') : dark ? 'bg-white/10 text-white hover:bg-white/18' : 'bg-ink/6 hover:bg-ink/10'
+            }`}
+          >
+            {on && <Check size={14} weight="bold" />}
+            {o}
+          </button>
+        )
+      })}
+    </div>
+  )
 }

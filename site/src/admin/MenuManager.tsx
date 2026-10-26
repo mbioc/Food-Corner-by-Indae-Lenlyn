@@ -382,11 +382,14 @@ function Packages() {
                       <Trash size={18} />
                     </button>
                     <input
-                      aria-label="What this add-on includes"
+                      aria-label="Options for this add-on, each charged the price"
                       className={`col-span-full ${inputClass()}`}
-                      value={a.includes ?? ''}
-                      onChange={(e) => up({ includes: e.target.value || undefined })}
-                      placeholder="Includes (optional), e.g. Paklay, Dinuguan, Sha-i (Fried)"
+                      defaultValue={(a.options ?? []).join(', ')}
+                      onBlur={(e) => {
+                        const options = e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
+                        up({ options: options.length ? options : undefined })
+                      }}
+                      placeholder="Options, each charged the price (optional), e.g. Paklay, Dinuguan, Sha-i (Fried)"
                     />
                   </div>
                 )

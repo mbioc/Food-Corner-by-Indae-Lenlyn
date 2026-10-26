@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import type { Package } from '../data/menu'
 import { peso, useOrder } from '../lib/order'
 import { Sheet } from './Sheet'
-import { Button, Stepper } from './ui'
+import { Button, CheckChips, Stepper } from './ui'
 
 export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null; onClose: () => void }) {
   const { add } = useOrder()
@@ -13,7 +13,7 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
   const pkg = incoming ?? last.current
   const [choices, setChoices] = useState<Record<string, string[]>>({})
   const [addOns, setAddOns] = useState<Record<string, number>>({})
-  const [addOnOptions, setAddOnOptions] = useState<Record<string, string>>({})
+  const [addOnOptions, setAddOnOptions] = useState<Record<string, string[]>>({})
   const [qty, setQty] = useState(1)
   const firstImg = useRef<HTMLDivElement>(null)
 
@@ -37,10 +37,10 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
   }
 
   const missing = pkg.groups.filter((g) => (choices[g.id]?.length ?? 0) < g.choose)
-  const addOnTotal = (pkg.addOns ?? []).reduce((n, a) => n + (addOns[a.id] ?? 0) * a.price, 0)
+  // Add-ons with options (paluto dishes) are charged per option ticked, the rest per unit.
+  const addOnTotal = (pkg.addOns ?? []).reduce((n, a) => n + (a.options?.length ? (addOnOptions[a.id]?.length ?? 0) : (addOns[a.id] ?? 0)) * a.price, 0)
   const total = (pkg.price + addOnTotal) * qty
-  // Only send the cooking choices for add-ons that are actually on the order.
-  const pickedEntries = (pkg.addOns ?? []).filter((a) => a.options?.length && (addOns[a.id] ?? 0) > 0).map((a) => [a.id, addOnOptions[a.id] ?? a.options![0]])
+  const pickedEntries = Object.entries(addOnOptions).filter(([, v]) => v.length)
   const pickedOptions = pickedEntries.length ? Object.fromEntries(pickedEntries) : undefined
 
   return (
@@ -159,34 +159,17 @@ export function PackageBuilder({ pkg: incoming, onClose }: { pkg: Package | null
                   <p className="font-semibold">{a.name}</p>
                   <p className="num text-sm text-ink-soft">
                     +{peso(a.price)}
-                    {a.perUnit ? ` per ${a.perUnit}` : ''}
+                    {a.options?.length ? ' each' : a.perUnit ? ` per ${a.perUnit}` : ''}
                   </p>
-                  {a.includes && <p className="text-sm text-ink-soft">Includes {a.includes}</p>}
                 </div>
-                <Stepper label={a.name} min={0} max={a.max ?? 10} value={addOns[a.id] ?? 0} onChange={(n) => setAddOns((s) => ({ ...s, [a.id]: n }))} />
-                {a.options?.length && (addOns[a.id] ?? 0) > 0 ? (
-                  <div className="basis-full pb-1" role="radiogroup" aria-label={`How to cook the ${a.name}`}>
-                    <p className="text-sm font-semibold">How should we cook it?</p>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      {a.options.map((o) => {
-                        const on = (addOnOptions[a.id] ?? a.options![0]) === o
-                        return (
-                          <button
-                            key={o}
-                            type="button"
-                            role="radio"
-                            aria-checked={on}
-                            onClick={() => setAddOnOptions((s) => ({ ...s, [a.id]: o }))}
-                            className={`inline-flex h-10 cursor-pointer items-center gap-1.5 rounded-full px-4 text-sm font-semibold transition-colors ${on ? 'bg-leaf text-white' : 'bg-ink/6 hover:bg-ink/10'}`}
-                          >
-                            {on && <Check size={14} weight="bold" />}
-                            {o}
-                          </button>
-                        )
-                      })}
-                    </div>
+                {a.options?.length ? (
+                  <div className="basis-full pb-1">
+                    <p className="mb-2 text-sm text-ink-soft">Tick the dishes you want. {peso(a.price)} per dish.</p>
+                    <CheckChips label={a.name} options={a.options} value={addOnOptions[a.id] ?? []} onChange={(v) => setAddOnOptions((s) => ({ ...s, [a.id]: v }))} />
                   </div>
-                ) : null}
+                ) : (
+                  <Stepper label={a.name} min={0} max={a.max ?? 10} value={addOns[a.id] ?? 0} onChange={(n) => setAddOns((s) => ({ ...s, [a.id]: n }))} />
+                )}
               </li>
             ))}
           </ul>

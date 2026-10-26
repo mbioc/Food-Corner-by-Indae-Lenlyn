@@ -8,7 +8,7 @@ import { usePricingMenu } from './menu'
 export type Line =
   | { key: string; kind: 'tray'; refId: string; qty: number }
   | { key: string; kind: 'lechon'; refId: string; qty: number }
-  | { key: string; kind: 'extra'; refId: string; qty: number; option?: string }
+  | { key: string; kind: 'extra'; refId: string; qty: number; option?: string; picks?: string[] }
   | { key: string; kind: 'belly'; refId: string; qty: number }
   | { key: string; kind: 'inyuha'; refId: string; qty: number }
   | {
@@ -18,7 +18,7 @@ export type Line =
       qty: number
       choices: Record<string, string[]> // groupId -> option ids
       addOns: Record<string, number> // addOnId -> units
-      addOnOptions?: Record<string, string> // addOnId -> chosen option, e.g. how the laman-loob is cooked
+      addOnOptions?: Record<string, string[]> // addOnId -> options ticked, e.g. which paluto dishes
     }
 
 type DistOmit<T, K extends PropertyKey> = T extends unknown ? Omit<T, K> : never

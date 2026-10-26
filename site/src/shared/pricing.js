@@ -6,7 +6,7 @@
  * @typedef {{ id: string, kind: 'whole' | 'belly' | 'inyuha', label: string, kilos: number, price: number }} LechonOption
  * @typedef {{ id: string, name: string, img: string }} Opt
  * @typedef {{ id: string, label: string, choose: number, options: Opt[] }} ChoiceGroup
- * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number, img?: string, options?: string[], includes?: string }} AddOn
+ * @typedef {{ id: string, name: string, price: number, perUnit?: string, max?: number, img?: string, options?: string[] }} AddOn
  * @typedef {{ id: string, code: string, name: string, price: number, paxMin: number, paxMax: number, summary: string,
  *   fixed: { name: string, img: string }[], groups: ChoiceGroup[], freebies?: string[], pickupOnly?: boolean, addOns?: AddOn[] }} Package
  * @typedef {{ id: string, label: string, detail: string, feeMin: number, feeMax: number, quote?: boolean }} Zone
@@ -16,18 +16,24 @@
 // Smallest down payment a customer may choose (pesos). The owner can change it in the admin settings.
 export const DOWNPAYMENT_MIN = 500
 
-// The paid paluto sa laman-loob (the lechon's innards) is cooked into all three of these dishes.
-export const PALUTO_DISHES = 'Paklay, Dinuguan, Sha-i (Fried)'
+// Dishes the kitchen can cook from the lechon's laman-loob (innards). Each one picked is charged.
+export const PALUTO_DISHES = ['Paklay', 'Dinuguan', 'Sha-i (Fried)']
 
-// Priced extras staff can add to a walk-in order on their own.
+// Priced extras sold on their own. Extras with `multi` charge their price once per option ticked.
 export const EXTRAS = [
-  { id: 'paluto', name: 'Paluto sa laman-loob', price: 250, includes: PALUTO_DISHES },
+  { id: 'paluto', name: 'Paluto sa laman-loob', price: 250, options: PALUTO_DISHES, multi: true, optionLabel: 'Dishes' },
   { id: 'tupperware', name: 'Containers', price: 150, options: ['White tupperware', 'Aluminum'], optionLabel: 'Type' },
 ]
 export const PICKUP_ID = 'pickup'
 
+/** The options from `options` that `value` (an array, or one string) picks, in menu order. */
+export function pickList(value, options) {
+  const v = Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+  return options.filter((o) => v.includes(o))
+}
+
 /**
- * @param {any} line  { kind, refId, qty, choices?, addOns?, addOnOptions?, option? }
+ * @param {any} line  { kind, refId, qty, choices?, addOns?, addOnOptions?, option?, picks? }
  * @param {Menu} menu
  */
 export function resolveLine(line, menu) {
@@ -40,14 +46,27 @@ export function resolveLine(line, menu) {
   if (line.kind === 'extra') {
     const e = EXTRAS.find((x) => x.id === line.refId)
     if (!e) return null
-    const option = e.options ? (e.options.includes(line.option) ? line.option : e.options[0]) : undefined
+    if (e.multi) {
+      const found = pickList(line.picks, e.options)
+      const picks = found.length ? found : [e.options[0]]
+      return {
+        line: { ...line, qty, picks },
+        title: e.name,
+        detail: [`${e.optionLabel}: ${picks.join(', ')}`],
+        unitPrice: e.price * picks.length,
+        total: e.price * picks.length * qty,
+        img: menu.lechonImg?.whole ?? '',
+        pickupOnly: false,
+      }
+    }
+    const option = e.options.includes(line.option) ? line.option : e.options[0]
     return {
-      line: { ...line, qty, ...(option ? { option } : {}) },
+      line: { ...line, qty, option },
       title: e.name,
-      detail: option ? [`${e.optionLabel}: ${option}`] : e.includes ? [`Includes: ${e.includes}`] : [],
+      detail: [`${e.optionLabel}: ${option}`],
       unitPrice: e.price,
       total: e.price * qty,
-      img: e.id === 'paluto' ? (menu.lechonImg?.whole ?? '') : '',
+      img: '',
       pickupOnly: false,
     }
   }
@@ -83,14 +102,19 @@ export function resolveLine(line, menu) {
     const addOns = line.addOns ?? {}
     const addOnOptions = {}
     for (const a of p.addOns ?? []) {
+      if (a.options?.length) {
+        // Add-ons with options (the paluto dishes) charge once per option ticked.
+        const picks = pickList(line.addOnOptions?.[a.id], a.options)
+        if (!picks.length) continue
+        addOnOptions[a.id] = picks
+        addOnTotal += picks.length * a.price
+        detail.push(`Add-on ${a.name}: ${picks.join(', ')}`)
+        continue
+      }
       const units = Math.max(0, Math.min(a.max ?? 10, Math.floor(Number(addOns[a.id]) || 0)))
       if (units > 0) {
         addOnTotal += units * a.price
-        // Add-ons with choices (how the laman-loob is cooked) keep the customer's pick, or the first one.
-        const opt = a.options?.length ? (a.options.includes(line.addOnOptions?.[a.id]) ? line.addOnOptions[a.id] : a.options[0]) : ''
-        if (opt) addOnOptions[a.id] = opt
-        detail.push(`Add-on: ${a.name}${opt ? ` (${opt})` : ''}${a.perUnit ? ` +${units} ${a.perUnit}` : ''}`)
-        if (a.includes) detail.push(`${a.name}: ${a.includes}`)
+        detail.push(`Add-on: ${a.name}${a.perUnit ? ` +${units} ${a.perUnit}` : ''}`)
       }
     }
     const unitPrice = p.price + addOnTotal
