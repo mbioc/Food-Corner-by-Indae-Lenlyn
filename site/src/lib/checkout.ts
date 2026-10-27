@@ -145,16 +145,69 @@ export function orderText(orderId: string, lines: ResolvedLine[], subtotal: numb
 
 export const messengerUrl = () => `https://m.me/${BUSINESS.messenger}`
 
+const IMAGE_EXT = /\.(jpe?g|png|webp|gif|heic|heif|bmp)$/i
+
+/** True for anything that may be a picture. Some phones (and Messenger's browser) leave the file type blank. */
+export const looksLikeImage = (file: File) => file.type.startsWith('image/') || (!file.type && (IMAGE_EXT.test(file.name) || !/\.[a-z0-9]+$/i.test(file.name)))
+
+/** Opens the picture, trying the fast decoder first and a plain <img> on browsers without it (older iPhones). */
+async function decodeImage(file: File): Promise<{ src: CanvasImageSource; w: number; h: number; done: () => void }> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const b = await createImageBitmap(file)
+      return { src: b, w: b.width, h: b.height, done: () => b.close() }
+    } catch {
+      // fall through to <img>
+    }
+  }
+  const url = URL.createObjectURL(file)
+  const img = new Image()
+  try {
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error('decode failed'))
+      img.src = url
+    })
+  } catch (e) {
+    URL.revokeObjectURL(url)
+    throw e
+  }
+  return { src: img, w: img.naturalWidth, h: img.naturalHeight, done: () => URL.revokeObjectURL(url) }
+}
+
+const readDataUrl = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const r = new FileReader()
+    r.onload = () => resolve(String(r.result))
+    r.onerror = () => reject(r.error)
+    r.readAsDataURL(file)
+  })
+
 /** Downscale the payment screenshot so it fits in an email and uploads fast on mobile data. */
 export async function compressImage(file: File, maxSide = 1400, quality = 0.8): Promise<{ dataUrl: string; name: string }> {
-  const bitmap = await createImageBitmap(file)
-  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
-  const canvas = document.createElement('canvas')
-  canvas.width = Math.round(bitmap.width * scale)
-  canvas.height = Math.round(bitmap.height * scale)
-  canvas.getContext('2d')!.drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-  const dataUrl = canvas.toDataURL('image/jpeg', quality)
-  return { dataUrl, name: file.name.replace(/\.[^.]+$/, '') + '.jpg' }
+  try {
+    const img = await decodeImage(file)
+    try {
+      const scale = Math.min(1, maxSide / Math.max(img.w, img.h))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(img.w * scale))
+      canvas.height = Math.max(1, Math.round(img.h * scale))
+      canvas.getContext('2d')!.drawImage(img.src, 0, 0, canvas.width, canvas.height)
+      const dataUrl = canvas.toDataURL('image/jpeg', quality)
+      if (!dataUrl.startsWith('data:image/jpeg')) throw new Error('canvas export failed')
+      return { dataUrl, name: file.name.replace(/\.[^.]+$/, '') + '.jpg' }
+    } finally {
+      img.done()
+    }
+  } catch (err) {
+    // Last resort: send the file as it is, when it's a type the server stores and small enough to upload.
+    const type = file.type || (/\.png$/i.test(file.name) ? 'image/png' : /\.webp$/i.test(file.name) ? 'image/webp' : 'image/jpeg')
+    if (/^image\/(jpeg|png|webp)$/.test(type) && file.size <= 3_000_000) {
+      const raw = await readDataUrl(file)
+      return { dataUrl: raw.replace(/^data:[^;]*;/, `data:${type};`), name: file.name }
+    }
+    throw err
+  }
 }
 
 export interface SubmitResult {
@@ -166,7 +219,7 @@ export interface SubmitResult {
   error?: string
 }
 
-export async function submitOrder(payload: { lines: Line[]; form: CheckoutForm; proof: { dataUrl: string; name: string } }): Promise<SubmitResult> {
+export async function submitOrder(payload: { lines: Line[]; form: CheckoutForm; proof: { dataUrl: string; name: string } | null; proofLater?: boolean }): Promise<SubmitResult> {
   try {
     const res = await fetch(SETTINGS.orderEndpoint, {
       method: 'POST',

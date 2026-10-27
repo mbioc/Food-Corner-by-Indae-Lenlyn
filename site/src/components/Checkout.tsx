@@ -11,6 +11,7 @@ import {
   amountDue,
   canPayDown,
   compressImage,
+  looksLikeImage,
   formatDate,
   formatTime,
   messengerUrl,
@@ -45,6 +46,8 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   const [errors, setErrors] = useState<Errors>({})
   const [proof, setProof] = useState<{ dataUrl: string; name: string } | null>(null)
   const [proofBusy, setProofBusy] = useState(false)
+  // The customer couldn't upload and will send the screenshot on Messenger instead.
+  const [proofLater, setProofLater] = useState(false)
   const [sending, setSending] = useState(false)
   const [done, setDone] = useState<Done | null>(null)
   const orderId = useMemo(() => makeOrderId(), [open]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -70,7 +73,7 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   }
 
   const next = () => {
-    const e = validateStep(step, form, !!proof, hasPickupOnly, blocked, subtotal, dp)
+    const e = validateStep(step, form, !!proof || proofLater, hasPickupOnly, blocked, subtotal, dp)
     setErrors(e)
     if (Object.keys(e).length) {
       const first = Object.keys(e)[0]
@@ -84,9 +87,9 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   }
 
   const send = async () => {
-    if (!proof) return
+    if (!proof && !proofLater) return
     setSending(true)
-    const res = await submitOrder({ lines, form, proof })
+    const res = await submitOrder({ lines, form, proof, proofLater: !proof && proofLater })
     setSending(false)
     if (res.rejected) {
       // The server rejected the order (sold out, fully booked…): keep the table so the customer can fix it.
@@ -103,16 +106,18 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
   const onFile = async (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
-    if (!file.type.startsWith('image/')) {
+    e.target.value = '' // so picking the same file again still fires
+    if (!looksLikeImage(file)) {
       setErrors((x) => ({ ...x, proof: 'Please upload an image (screenshot or photo).' }))
       return
     }
     setProofBusy(true)
     try {
       setProof(await compressImage(file))
+      setProofLater(false)
       setErrors((x) => ({ ...x, proof: undefined }))
     } catch {
-      setErrors((x) => ({ ...x, proof: 'We could not read that image. Try another screenshot.' }))
+      setErrors((x) => ({ ...x, proof: "We couldn't read that image. Try a screenshot (PNG or JPG), or send it on Messenger below." }))
     } finally {
       setProofBusy(false)
     }
@@ -354,6 +359,26 @@ export function Checkout({ open, onClose }: { open: boolean; onClose: () => void
                     <input id="co-proof" type="file" accept="image/*" className="sr-only" onChange={onFile} />
                   </label>
                 </Field>
+                {!proof &&
+                  (proofLater ? (
+                    <p className="-mt-2 rounded-[12px] bg-sun/40 p-3 text-sm">
+                      <strong>OK, send the screenshot on Messenger</strong> right after you send this order, so Lenlyn can confirm it.{' '}
+                      <button type="button" onClick={() => setProofLater(false)} className="cursor-pointer font-semibold underline">
+                        Upload instead
+                      </button>
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProofLater(true)
+                        setErrors((x) => ({ ...x, proof: undefined }))
+                      }}
+                      className="-mt-2 w-fit cursor-pointer text-left text-sm font-semibold text-leaf underline"
+                    >
+                      Can't upload? Send the screenshot on Messenger instead
+                    </button>
+                  ))}
                 <Field label="Reference number" htmlFor="co-reference" optional>
                   <input id="co-reference" className={`num ${inputClass()}`} value={form.reference} onChange={(e) => set('reference', e.target.value)} />
                 </Field>
